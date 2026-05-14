@@ -72,8 +72,8 @@ export default function BottomNav({ activeTab, onTabChange, statusBadge = 0 }: B
               <circle cx="19" cy="19" r="2"/>
             </svg>
             {statusBadge > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center px-1 leading-none border-2 border-white">
-                {statusBadge}
+              <span className="absolute -top-1 -right-1 min-w-[18px] min-h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] py-[1px] leading-none border-2 border-white">
+                {statusBadge > 99 ? '99+' : statusBadge}
               </span>
             )}
           </div>

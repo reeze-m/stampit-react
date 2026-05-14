@@ -70,7 +70,8 @@ export default function ConfirmScheduleSheet({
       e.startDate <= schedule.date &&
       (!e.endDate || e.endDate >= schedule.date)
     );
-    setMultiplier(event ? (event.multiplier ?? 1) : 1);
+    // 이벤트가 없으면 일정에 저장된 multiplier 사용 (AddScheduleSheet에서 수동 설정한 배수 유지)
+    setMultiplier(event ? (event.multiplier ?? 1) : (schedule.multiplier ?? 1));
     setShowSummary(false);
     setShowMultiplier(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps

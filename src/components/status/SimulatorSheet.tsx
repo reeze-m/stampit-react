@@ -12,7 +12,7 @@ interface SimulatorSheetProps {
 export default function SimulatorSheet({ isOpen, onClose, boards }: SimulatorSheetProps) {
   const [views, setViews] = useState(5);
 
-  const targetBoards = boards.filter(b => b.isActive && !b.isCompleted);
+  const targetBoards = boards.filter(b => b.isActive && !b.isCompleted && !b.isHidden);
   const result = views > 0 && targetBoards.length > 0
     ? runSimulator(boards, views)
     : null;

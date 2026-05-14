@@ -292,7 +292,7 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
               </button>
             }
           />
-          <CouponTrackerCard boards={show.stampBoards} onTap={() => setCouponHistoryOpen(true)} showAmount={showAmount} />
+          <CouponTrackerCard boards={show.stampBoards} onTap={() => setCouponHistoryOpen(true)} showAmount={true} />
           <RewardSummary showId={show.id} boards={show.stampBoards} />
         </section>
 

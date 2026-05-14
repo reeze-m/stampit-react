@@ -15,7 +15,7 @@ export function runSimulator(
   boards: StampBoard[],
   remainingViews: number
 ): SimulatorResult & { leftoverViews: number } {
-  const sim = cloneBoards(boards).filter(b => b.isActive && !b.isCompleted);
+  const sim = cloneBoards(boards).filter(b => b.isActive && !b.isCompleted && !b.isHidden);
 
   // ── 데이터 정합성 보정: 현재 도장 수가 혜택 기준을 넘었는데
   //    isAchieved=false 인 경우 distance가 음수가 되어 혜택이 잘못 표시됨
@@ -90,7 +90,7 @@ export function runSimulator(
 
   // 결과 집계 (원본 boards 기준으로 이름·sortOrder 참조)
   const boardResults: SimulatorBoardResult[] = boards
-    .filter(b => b.isActive && !b.isCompleted)
+    .filter(b => b.isActive && !b.isCompleted && !b.isHidden)
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map(b => ({
       boardId: b.id,
