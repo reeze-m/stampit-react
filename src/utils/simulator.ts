@@ -284,3 +284,95 @@ export function planWithGuarantee(
     leftoverAfter: remaining,
   };
 }
+
+// ─── 신규 도장판 배분 시뮬레이터 ───────────────────────────────────────────────
+
+export interface NewBoardItem {
+  index: number;
+  stamps: number;   // 이 도장판에 찍히는 도장 수
+  benefits: { description: string; requiredStamps: number }[];
+}
+
+export interface NewBoardSimulation {
+  boards: NewBoardItem[];
+  benefitSummary: { description: string; total: number }[];
+}
+
+/**
+ * 신규 도장판 배분 시뮬레이터 (순수 함수)
+ *
+ * @param allBenefits false(기본): 우선순위 높은 혜택을 최대 수량으로 greedy 배분
+ *                   true: 모든 혜택을 최소 1개씩 확보 후 나머지를 greedy 배분
+ *
+ * 혜택은 누적형이므로 7회 도장판에는 3회·5회·7회 혜택이 모두 발생함.
+ */
+export function simulateNewBoards(
+  templateBoard: StampBoard,
+  views: number,
+  allBenefits: boolean,
+): NewBoardSimulation {
+  if (views <= 0 || templateBoard.benefits.length === 0) {
+    return { boards: [], benefitSummary: [] };
+  }
+
+  // 우선순위 오름차순(낮은 숫자 = 높은 우선순위)으로 혜택 정렬
+  const sortedBenefits = [...templateBoard.benefits].sort(
+    (a, b) => a.priority - b.priority || a.requiredStamps - b.requiredStamps,
+  );
+
+  // 우선순위 순서를 유지하면서 중복 없는 threshold 목록
+  const thresholdsByPriority = [
+    ...new Map(sortedBenefits.map(b => [b.requiredStamps, b])).values(),
+  ].map(b => b.requiredStamps);
+
+  const maxThreshold = Math.max(...templateBoard.benefits.map(b => b.requiredStamps));
+
+  // threshold에서 발생하는 누적 혜택 (해당 threshold 이하 전체)
+  function benefitsAt(threshold: number) {
+    return sortedBenefits
+      .filter(b => b.requiredStamps <= threshold)
+      .map(b => ({ description: b.description, requiredStamps: b.requiredStamps }));
+  }
+
+  const items: NewBoardItem[] = [];
+  let remaining = views;
+  let idx = 1;
+
+  // ── Toggle ON: 최대 threshold 1개 먼저 확보 (모든 혜택 최소 1개 보장) ──
+  if (allBenefits && remaining >= maxThreshold) {
+    items.push({ index: idx++, stamps: maxThreshold, benefits: benefitsAt(maxThreshold) });
+    remaining -= maxThreshold;
+  }
+
+  // ── Greedy: 우선순위 순으로 남은 횟수 배분 ──
+  for (const threshold of thresholdsByPriority) {
+    if (remaining <= 0) break;
+    const count = Math.floor(remaining / threshold);
+    if (count > 0) {
+      const benfits = benefitsAt(threshold);
+      for (let i = 0; i < count; i++) {
+        items.push({ index: idx++, stamps: threshold, benefits: benfits });
+      }
+      remaining %= threshold;
+    }
+  }
+
+  // ── 잔여: 혜택 미달성 부분 도장판 ──
+  if (remaining > 0) {
+    items.push({ index: idx++, stamps: remaining, benefits: [] });
+  }
+
+  // 혜택별 합산 (우선순위 순)
+  const countMap = new Map<string, number>();
+  for (const item of items) {
+    for (const b of item.benefits) {
+      countMap.set(b.description, (countMap.get(b.description) ?? 0) + 1);
+    }
+  }
+  const benefitSummary = sortedBenefits
+    .filter((b, i, arr) => arr.findIndex(x => x.description === b.description) === i)
+    .filter(b => countMap.has(b.description))
+    .map(b => ({ description: b.description, total: countMap.get(b.description)! }));
+
+  return { boards: items, benefitSummary };
+}

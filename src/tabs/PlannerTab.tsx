@@ -360,7 +360,7 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
             {/* 상태 필터 */}
             <div className="flex items-center gap-2">
               <span className="text-[12px] text-gray-400 flex-shrink-0 font-medium">상태</span>
-              <div className="flex gap-1.5 overflow-x-auto no-scrollbar pt-2 -mt-2 pb-0.5">
+              <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
                 {(
                   [
                     { key: 'all',         label: '전체',   count: 0 },
@@ -376,7 +376,7 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
                     <button
                       key={tab.key}
                       onClick={() => setScheduleFilter(tab.key)}
-                      className={`relative flex-shrink-0 h-8 px-3 rounded-full text-xs font-medium transition-colors ${
+                      className={`flex items-center gap-1.5 flex-shrink-0 h-8 px-3 rounded-full text-xs font-medium transition-colors ${
                         isActive
                           ? 'bg-indigo-50 text-indigo-600'
                           : 'bg-gray-100 text-gray-500'
@@ -384,8 +384,8 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
                     >
                       {tab.label}
                       {tab.key !== 'all' && tab.count > 0 && (
-                        <span className={`absolute -top-1.5 -right-1 min-w-[16px] h-4 text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none ${
-                          isActive ? 'bg-indigo-600 text-white' : 'bg-gray-300 text-gray-600'
+                        <span className={`min-w-[16px] h-4 text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none ${
+                          isActive ? 'bg-indigo-600 text-white' : 'bg-gray-400 text-white'
                         }`}>
                           {tab.count > 9 ? '9+' : tab.count}
                         </span>
