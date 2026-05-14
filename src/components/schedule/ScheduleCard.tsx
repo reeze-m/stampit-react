@@ -116,10 +116,12 @@ export default function ScheduleCard({
 
   return (
     <div
-      className={`relative rounded-xl border border-gray-200 border-l-[3px] ${leftBorderColor} ${bgColor} overflow-hidden ${isCancelled ? 'opacity-50' : ''}`}
+      className={`relative rounded-xl border border-gray-200 border-l-[3px] ${leftBorderColor} ${isCancelled ? 'opacity-50' : ''}`}
       data-testid={`schedule-card-${schedule.id}`}
       data-schedule-id={schedule.id}
     >
+      {/* overflow-hidden 을 inner div 에 적용 — 드롭다운이 바깥에 위치해야 하므로 분리 */}
+      <div className={`overflow-hidden rounded-xl ${bgColor}`}>
       {/* ── 상단 행: 날짜 + 뱃지 + 메뉴 ── */}
       <div className="flex items-center justify-between px-[14px] pt-3">
         {/* 날짜 + 경과일 */}
@@ -269,7 +271,9 @@ export default function ScheduleCard({
         </div>
       )}
 
-      {/* ── 드롭다운 메뉴 ── */}
+      </div>{/* /inner overflow-hidden */}
+
+      {/* ── 드롭다운 메뉴 ── overflow-hidden 밖에 위치해야 카드에 잘리지 않음 */}
       {showMenu && menuOpen && (
         <div className="absolute right-2 top-8 z-50" ref={menuRef}>
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 w-36 overflow-hidden">
