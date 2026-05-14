@@ -14,8 +14,19 @@ function cloneBoards(boards: StampBoard[]): StampBoard[] {
 export function runSimulator(
   boards: StampBoard[],
   remainingViews: number
-): SimulatorResult {
+): SimulatorResult & { leftoverViews: number } {
   const sim = cloneBoards(boards).filter(b => b.isActive && !b.isCompleted);
+
+  // ── 데이터 정합성 보정: 현재 도장 수가 혜택 기준을 넘었는데
+  //    isAchieved=false 인 경우 distance가 음수가 되어 혜택이 잘못 표시됨
+  for (const b of sim) {
+    const count = b.stamps.length;
+    for (const benefit of b.benefits) {
+      if (!benefit.isAchieved && benefit.requiredStamps <= count) {
+        benefit.isAchieved = true;
+      }
+    }
+  }
 
   // 판별 추가 도장 수 집계
   const stampsAdded: Record<string, number> = {};
@@ -25,18 +36,23 @@ export function runSimulator(
     achievedMap[b.id] = [];
   }
 
+  let usedViews = 0;
   for (let i = 0; i < remainingViews; i++) {
     const active = sim.filter(b => !b.isCompleted);
     if (active.length === 0) break;
+    usedViews++;
 
     // 각 판의 다음 미달성 혜택까지 거리 계산
+    // Math.max(0, ...) 로 음수 방지
     const ranked = active
       .map(b => {
         const currentCount = b.stamps.length;
         const next = b.benefits
           .filter(ben => !ben.isAchieved)
           .sort((a, c) => a.requiredStamps - c.requiredStamps)[0];
-        const distance = next ? next.requiredStamps - currentCount : Infinity;
+        const distance = next
+          ? Math.max(0, next.requiredStamps - currentCount)
+          : Infinity;
         return { board: b, distance };
       })
       .sort((a, b) => {
@@ -88,5 +104,8 @@ export function runSimulator(
     0
   );
 
-  return { totalBenefits, boardResults };
+  // 도장판이 꽉 차 할당되지 못한 잔여 관람 수
+  const leftoverViews = remainingViews - usedViews;
+
+  return { totalBenefits, boardResults, leftoverViews };
 }

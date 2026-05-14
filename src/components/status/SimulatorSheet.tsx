@@ -75,6 +75,22 @@ export default function SimulatorSheet({ isOpen, onClose, boards }: SimulatorShe
               </p>
             </div>
 
+            {/* 신규 도장판 추천 — 도장판이 꽉 차 잔여 관람이 남은 경우 */}
+            {result.leftoverViews > 0 && (
+              <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl">
+                <span className="text-lg shrink-0">🆕</span>
+                <div>
+                  <p className="text-sm font-semibold text-amber-800">새 도장판이 필요해요</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    현재 도장판이 꽉 차서{' '}
+                    <span className="font-bold">{result.leftoverViews}회</span>{' '}
+                    관람분을 적립할 곳이 없어요.
+                    새 도장판을 추가하면 더 많은 혜택을 달성할 수 있어요.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* 도장판별 결과 카드 */}
             {result.boardResults.map(r => {
               const board = boards.find(b => b.id === r.boardId);
