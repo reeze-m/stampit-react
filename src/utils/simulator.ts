@@ -275,10 +275,10 @@ export function planWithGuarantee(
   return {
     guaranteeThreshold,
     guaranteeBenefitName: exclusiveBenefit.description,
-    segments: segments.sort((a, b) => {
-      const pa = templateBoard.benefits.find(b => b.requiredStamps === a.threshold)?.priority ?? 99;
-      const pb = templateBoard.benefits.find(b => b.requiredStamps === b.threshold)?.priority ?? 99;
-      return pa - pb || b.threshold - a.threshold;
+    segments: segments.sort((segA, segB) => {
+      const pa = templateBoard.benefits.find(ben => ben.requiredStamps === segA.threshold)?.priority ?? 99;
+      const pb = templateBoard.benefits.find(ben => ben.requiredStamps === segB.threshold)?.priority ?? 99;
+      return pa - pb || segB.threshold - segA.threshold;
     }),
     benefitSummary: [...benefitMap.values()].sort((a, b) => a.priority - b.priority),
     leftoverAfter: remaining,
