@@ -212,13 +212,23 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
                 title="도장판"
                 className="-mx-4"
                 action={
-                  <button
-                    data-testid="btn-add-board"
-                    onClick={() => setAddBoardOpen(true)}
-                    className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-medium min-h-[36px]"
-                  >
-                    + 새 판
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      data-testid="btn-simulator"
+                      onClick={() => setSimulatorOpen(true)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 active:bg-gray-100"
+                      title="배분 시뮬레이터"
+                    >
+                      🔮
+                    </button>
+                    <button
+                      data-testid="btn-add-board"
+                      onClick={() => setAddBoardOpen(true)}
+                      className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-medium min-h-[36px]"
+                    >
+                      + 새 판
+                    </button>
+                  </div>
                 }
               />
 
@@ -309,13 +319,6 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
               </div>
               <CostSummary schedules={showSchedules} showRealCost={settings.showRealCost} showAmount={showAmount} />
               <CastStats showId={show.id} />
-              <button
-                data-testid="btn-simulator"
-                onClick={() => setSimulatorOpen(true)}
-                className="w-full py-2.5 text-gray-400 rounded-xl text-xs font-medium min-h-[40px]"
-              >
-                🔮 배분 시뮬레이터
-              </button>
             </div>
           )}
         </section>
