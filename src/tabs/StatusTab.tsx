@@ -96,7 +96,7 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 88px)' }}>
         {/* B-02 요약 카드 */}
         <StatusSummaryCard
           totalConfirmed={totalConfirmed}

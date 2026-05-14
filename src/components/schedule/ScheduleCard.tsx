@@ -123,7 +123,7 @@ export default function ScheduleCard({
       {/* ── 상단 행: 날짜 + 뱃지 + 메뉴 ── */}
       <div className="flex items-center justify-between px-[14px] pt-3">
         {/* 날짜 + 경과일 */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[13px] font-medium text-gray-700">{dateLabel}</span>
           {schedule.time && (
             <span className="text-[12px] text-gray-400">{schedule.time}</span>
@@ -142,7 +142,7 @@ export default function ScheduleCard({
         </div>
 
         {/* 우측: 뱃지들 + 메뉴 */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {discount?.isRebook && (
             <Badge color="indigo">재관람</Badge>
           )}

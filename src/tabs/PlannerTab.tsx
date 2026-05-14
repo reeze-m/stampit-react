@@ -260,7 +260,7 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
 
       {/* 리스트 뷰 */}
       {viewMode === 'list' && (
-      <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 128px)' }}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 160px)' }}>
         {/* SC-36 오늘의 일정 퀵카드 */}
         <QuickConfirmCard
           schedules={todayUnconfirmed}

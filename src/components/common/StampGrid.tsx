@@ -12,7 +12,7 @@ interface StampGridProps {
 
 /** 도장판 그리드 컴포넌트 */
 export default function StampGrid({ capacity, stamps, benefits, previewInitial, stampColor = DEFAULT_STAMP_COLOR }: StampGridProps) {
-  const cols = Math.min(5, capacity);
+  const cols = Math.min(7, capacity);
   const benefitPositions = new Set(benefits.map(b => b.requiredStamps));
 
   // 미리보기 모드: stamps 배열 대신 previewInitial 사용
