@@ -56,6 +56,26 @@ export default function ConfirmScheduleSheet({
   const [showMultiplier, setShowMultiplier] = useState(false);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
+  // ── 시트 열릴 때마다 전체 상태 리셋 ──────────────────────────────────────
+  // useState 초기값은 최초 마운트 시 1회만 실행됨.
+  // isOpen/schedule 변경 시 리셋하지 않으면 이전 확정의 multiplier(=1)가
+  // 이벤트 일정에도 그대로 적용되어 도장이 1개만 찍히는 버그 발생.
+  useEffect(() => {
+    if (!isOpen || !schedule) return;
+    setRebookChecked(false);
+    setCouponChecked(false);
+    setSelectedBoardId(activeBoards[0]?.id ?? '');
+    setSelectedCast(schedule.cast ?? '');
+    const event = show.events.find(e =>
+      e.startDate <= schedule.date &&
+      (!e.endDate || e.endDate >= schedule.date)
+    );
+    setMultiplier(event ? (event.multiplier ?? 1) : 1);
+    setShowSummary(false);
+    setShowMultiplier(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, schedule?.id]);
+
   // ── visualViewport 키보드 감지 ─────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
