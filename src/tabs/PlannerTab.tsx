@@ -360,7 +360,7 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
             {/* 상태 필터 */}
             <div className="flex items-center gap-2">
               <span className="text-[12px] text-gray-400 flex-shrink-0 font-medium">상태</span>
-              <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+              <div className="flex gap-1.5 overflow-x-auto no-scrollbar pt-2 -mt-2 pb-0.5">
                 {(
                   [
                     { key: 'all',         label: '전체',   count: 0 },

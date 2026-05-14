@@ -273,66 +273,82 @@ export default function SimulatorSheet({ isOpen, onClose, boards }: SimulatorShe
         )}
 
         {/* 결과 */}
-        {result && result.boardResults.length > 0 && (
-          <div className="space-y-3">
-            {/* 결과 헤더 */}
-            <div className="px-4 py-3 bg-indigo-50 rounded-2xl text-center">
-              <p className="text-sm text-indigo-700">
-                <span className="font-bold text-indigo-900">{views}회</span> 관람 시{' '}
-                혜택 총{' '}
-                <span className="font-bold text-indigo-600 text-base">{result.totalBenefits}개</span>{' '}
-                달성 가능
-              </p>
-            </div>
+        {result && result.boardResults.length > 0 && (() => {
+          // 혜택 이름별 집계 (우선순위 보존)
+          const benefitMap = new Map<string, number>();
+          for (const r of result.boardResults) {
+            for (const b of r.achievedBenefits) {
+              benefitMap.set(b.description, (benefitMap.get(b.description) ?? 0) + 1);
+            }
+          }
+          const benefitSummary = [...benefitMap.entries()]; // [description, count]
 
-            {/* 신규 도장판 플랜 — 도장판이 꽉 차 잔여 관람이 남은 경우 */}
-            {result.leftoverViews > 0 && (
-              <NewBoardPlansSection
-                boards={boards}
-                leftoverViews={result.leftoverViews}
-              />
-            )}
+          return (
+            <div className="space-y-3">
 
-            {/* 도장판별 결과 카드 */}
-            {result.boardResults.map(r => {
-              const board = boards.find(b => b.id === r.boardId);
-              const currentStamps = board?.stamps.length ?? 0;
-              const capacity = board?.capacity ?? 0;
-
-              return (
-                <div
-                  key={r.boardId}
-                  data-testid={`simulator-result-${r.boardId}`}
-                  className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden"
-                >
-                  {/* 헤더 */}
-                  <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-gray-800">{r.boardName}</span>
-                    <span className="text-xs text-gray-400">
-                      +{r.stampsAdded}개 → 총 {currentStamps + r.stampsAdded} / {capacity}
-                    </span>
-                  </div>
-
-                  {/* 달성 혜택 */}
-                  <div className="px-4 py-3">
-                    {r.achievedBenefits.length === 0 ? (
-                      <p className="text-xs text-gray-400">이번 관람으로 달성되는 혜택이 없어요</p>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {r.achievedBenefits.map((b, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <span className="text-amber-400 text-xs shrink-0">★</span>
-                            <span className="text-sm text-amber-700 font-medium">{b.description}</span>
-                          </div>
-                        ))}
+              {/* ① 혜택 요약 — 핵심 정보를 가장 먼저 */}
+              <div className="px-4 py-4 bg-indigo-50 rounded-2xl space-y-3">
+                <p className="text-xs font-medium text-indigo-500">
+                  {views}회 관람 시 달성 가능한 혜택
+                </p>
+                {benefitSummary.length === 0 ? (
+                  <p className="text-sm text-indigo-400">달성되는 혜택이 없어요</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {benefitSummary.map(([desc, count], i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-1.5 bg-white rounded-xl px-3 py-1.5 shadow-sm"
+                      >
+                        <span className="text-amber-400 text-xs">★</span>
+                        <span className="text-sm font-semibold text-gray-800">{desc}</span>
+                        <span className="text-sm font-bold text-indigo-600">×{count}</span>
                       </div>
-                    )}
+                    ))}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                )}
+              </div>
+
+              {/* ② 도장판별 도장 현황 — 컴팩트하게 */}
+              <div className="space-y-1.5">
+                {result.boardResults.map(r => {
+                  const board = boards.find(b => b.id === r.boardId);
+                  const current = board?.stamps.length ?? 0;
+                  const capacity = board?.capacity ?? 0;
+                  const after = current + r.stampsAdded;
+                  return (
+                    <div
+                      key={r.boardId}
+                      data-testid={`simulator-result-${r.boardId}`}
+                      className="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-100 rounded-xl"
+                    >
+                      <span className="text-sm text-gray-700 flex-1 min-w-0 truncate">
+                        {r.boardName}
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0 text-xs text-gray-400">
+                        <span>+{r.stampsAdded}개</span>
+                        <span>·</span>
+                        <span>{current}</span>
+                        <span>→</span>
+                        <span className="font-semibold text-indigo-600">{after}</span>
+                        <span>/ {capacity}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ③ 새 도장판 — 잔여 관람이 있을 때 */}
+              {result.leftoverViews > 0 && (
+                <NewBoardPlansSection
+                  boards={boards}
+                  leftoverViews={result.leftoverViews}
+                />
+              )}
+
+            </div>
+          );
+        })()}
 
         {/* 안내 문구 */}
         <p data-testid="simulator-notice" className="text-xs text-gray-400 text-center pt-1">

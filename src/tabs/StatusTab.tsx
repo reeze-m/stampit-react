@@ -216,10 +216,9 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
                     <button
                       data-testid="btn-simulator"
                       onClick={() => setSimulatorOpen(true)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 active:bg-gray-100"
-                      title="배분 시뮬레이터"
+                      className="flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium active:bg-gray-200 min-h-[36px]"
                     >
-                      🔮
+                      🔮 <span>시뮬레이터</span>
                     </button>
                     <button
                       data-testid="btn-add-board"
