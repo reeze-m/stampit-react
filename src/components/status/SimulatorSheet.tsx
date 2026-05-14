@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import BottomSheet from '../common/BottomSheet';
-import type { StampBoard } from '../../types';
+import type { StampBoard, Schedule } from '../../types';
 import { simulateNewBoards, runSimulator } from '../../utils/simulator';
+import { todayKSTString } from '../../utils/dateUtils';
 
 interface SimulatorSheetProps {
   isOpen: boolean;
   onClose: () => void;
   boards: StampBoard[];
+  schedules?: Schedule[];
 }
 
 /** 기존 + 신규 도장판 혜택 통합 집계 */
@@ -55,9 +57,15 @@ function buildCombinedSummary(
     .sort((a, b) => a.priority - b.priority);
 }
 
-export default function SimulatorSheet({ isOpen, onClose, boards }: SimulatorSheetProps) {
+export default function SimulatorSheet({ isOpen, onClose, boards, schedules = [] }: SimulatorSheetProps) {
   const [views, setViews] = useState(10);
   const [allBenefits, setAllBenefits] = useState(false);
+
+  // 미래 미확정 일정 수 (오늘 포함)
+  const today = todayKSTString();
+  const futureCount = schedules.filter(
+    s => s.date >= today && !s.isConfirmed && (s.status ?? 'draft') !== 'cancelled',
+  ).length;
 
   // 기준 도장판: 활성·미완성·미숨김 중 sortOrder 가장 낮은 것 (신규 도장판 템플릿용)
   const templateBoard = [...boards]
@@ -131,9 +139,19 @@ export default function SimulatorSheet({ isOpen, onClose, boards }: SimulatorShe
             </div>
 
             {/* ── 남은 관람 횟수 ── */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">남은 관람 횟수</span>
-              <div className="flex items-center gap-3">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">남은 관람 횟수</span>
+                {futureCount > 0 && (
+                  <button
+                    onClick={() => setViews(Math.min(99, futureCount))}
+                    className="flex items-center gap-1 text-xs text-indigo-600 font-medium bg-indigo-50 rounded-lg px-2.5 py-1 active:bg-indigo-100"
+                  >
+                    📅 예정 일정 {futureCount}회 적용
+                  </button>
+                )}
+              </div>
+            <div className="flex items-center gap-3 justify-end">
                 <button
                   onClick={() => setViews(v => Math.max(1, v - 1))}
                   disabled={views <= 1}

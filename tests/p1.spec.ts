@@ -17,6 +17,7 @@ test.describe('P1-01 확정 시트 멀티플라이어', () => {
     await seedShow(page);
     await seedSchedule(page, { status: 'draft' });
     await page.goto('/');
+    await page.getByTestId('tab-planner').tap();
     await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-confirm').tap();
     await expect(page.getByTestId('bottomsheet-confirm')).toBeVisible();
@@ -53,6 +54,7 @@ test.describe('P1-02 확정 시트 재관람·초과', () => {
     await seedShow(page);
     await seedSchedule(page, { discountTypeId: 'disc-rebook', status: 'draft' });
     await page.goto('/');
+    await page.getByTestId('tab-planner').tap();
     await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-confirm').tap();
     await expect(page.getByTestId('bottomsheet-confirm')).toBeVisible();
@@ -97,6 +99,7 @@ test.describe('P1-03 혜택 달성 모달', () => {
       localStorage.setItem('stampit_react_v1', JSON.stringify(data));
     });
     await page.goto('/');
+    await page.getByTestId('tab-planner').tap();
     await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-confirm').tap();
     await page.getByTestId('select-board-board-001').tap();
@@ -121,6 +124,7 @@ test.describe('P1-03 혜택 달성 모달', () => {
       localStorage.setItem('stampit_react_v1', JSON.stringify(data));
     });
     await page.goto('/');
+    await page.getByTestId('tab-planner').tap();
     await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-confirm').tap();
     await page.getByTestId('select-board-board-001').tap();
@@ -139,6 +143,7 @@ test.describe('P1-04 티켓 변경 시트', () => {
     await seedShow(page);
     await seedSchedule(page, { status: 'confirmed', isConfirmed: true, finalPrice: 100000 });
     await page.goto('/');
+    await page.getByTestId('tab-planner').tap();
     await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-more').tap();
     await page.getByTestId('menu-ticket-change').tap();
@@ -149,6 +154,7 @@ test.describe('P1-04 티켓 변경 시트', () => {
     await seedShow(page);
     await seedSchedule(page, { status: 'confirmed', isConfirmed: true, finalPrice: 100000 });
     await page.goto('/');
+    await page.getByTestId('tab-planner').tap();
     await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-more').tap();
     await page.getByTestId('menu-ticket-change').tap();
@@ -161,6 +167,7 @@ test.describe('P1-04 티켓 변경 시트', () => {
     await seedShow(page);
     await seedSchedule(page, { status: 'confirmed', isConfirmed: true, finalPrice: 100000, originalPrice: 100000 });
     await page.goto('/');
+    await page.getByTestId('tab-planner').tap();
     await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-more').tap();
     await page.getByTestId('menu-ticket-change').tap();
@@ -181,6 +188,7 @@ test.describe('P1-05 확정 취소', () => {
     await seedShow(page);
     await seedSchedule(page, { status: 'confirmed', isConfirmed: true });
     await page.goto('/');
+    await page.getByTestId('tab-planner').tap();
     await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-more').tap();
     await page.getByTestId('menu-cancel-confirm').tap();
@@ -308,7 +316,7 @@ test.describe('P1-08 빠른 확정 카드', () => {
     await seedSchedule(page, { date: todayKST(), status: 'draft' });
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await page.getByTestId('btn-quick-confirm').tap();
+    await page.getByTestId('quick-confirm-btn').tap();
     // After quick confirm, schedule should be confirmed or confirm sheet opens
     const shows = await getStorage<Record<string, unknown>[]>(page, 'stampit:shows');
     const sched = (shows?.[0]?.['schedules'] as Record<string, unknown>[])?.[0];

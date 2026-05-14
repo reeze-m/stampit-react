@@ -373,6 +373,7 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
         isOpen={simulatorOpen}
         onClose={() => setSimulatorOpen(false)}
         boards={show.stampBoards}
+        schedules={showSchedules}
       />
 
       <CouponHistorySheet

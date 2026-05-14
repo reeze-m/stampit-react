@@ -27,7 +27,7 @@ test.describe('[P0-01] 온보딩', () => {
     await clearStorage(page);
     await page.goto('/');
     await page.locator('[data-testid="input-show-name"]').fill('테스트 공연');
-    await page.locator('[data-testid="btn-quick-start-submit"]').click();
+    await page.locator('[data-testid="input-show-name"]').press('Enter');
 
     const shows = await getStorage<{ name: string }[]>(page, 'stampit:shows');
     expect(shows).not.toBeNull();
@@ -110,6 +110,7 @@ test.describe('[P0-04] 관람 일정 추가', () => {
     await page.goto('/');
     await page.locator('[data-testid="tab-planner"]').click();
     await page.locator('[data-testid="fab-add"]').tap();
+    await page.locator('[data-testid="when-future"]').click();
     await page.locator('[data-testid="input-schedule-date"]').fill(addDaysKST(1));
     await page.locator('[data-testid="select-grade"]').selectOption('grade-vip');
     await page.locator('[data-testid="select-discount"]').selectOption('disc-rebook');
