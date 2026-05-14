@@ -46,6 +46,68 @@ function getSimplifiedDefaultName(prevBoardName: string | undefined, totalCount:
   return isAutoPattern ? getDefaultBoardName(totalCount) : '';
 }
 
+// ── BenefitEditor: 컴포넌트 외부에 정의해야 매 렌더마다 재생성되지 않음 ──
+// 내부 정의 시 부모 리렌더 → 새 컴포넌트로 인식 → 언마운트/리마운트 → 포커스 소실
+interface BenefitEditorProps {
+  benefits: EditableBenefit[];
+  hasBenefitOverflow: boolean;
+  onUpdateStamps: (idx: number, value: number) => void;
+  onUpdateDesc: (idx: number, value: string) => void;
+  onRemove: (idx: number) => void;
+  onMove: (idx: number, dir: 'up' | 'down') => void;
+  onAdd: () => void;
+}
+
+function BenefitEditor({
+  benefits,
+  hasBenefitOverflow,
+  onUpdateStamps,
+  onUpdateDesc,
+  onRemove,
+  onMove,
+  onAdd,
+}: BenefitEditorProps) {
+  return (
+    <div className="space-y-2">
+      {benefits.map((b, idx) => (
+        <div key={idx} className="flex items-center gap-1.5 p-2.5 bg-gray-50 rounded-xl">
+          <span className="w-5 h-5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
+          <input
+            data-testid={`benefit-stamps-${idx}`}
+            type="number"
+            value={b.requiredStamps}
+            onChange={e => onUpdateStamps(idx, Number(e.target.value))}
+            className="w-12 px-1 py-1 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 text-sm text-center"
+            min={1}
+          />
+          <input
+            type="text"
+            value={b.description}
+            onChange={e => onUpdateDesc(idx, e.target.value)}
+            placeholder="혜택 내용"
+            className="flex-1 px-2 py-1 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 text-sm"
+          />
+          <div className="flex flex-col shrink-0">
+            <button onClick={() => onMove(idx, 'up')} disabled={idx === 0} className="text-gray-400 hover:text-indigo-600 disabled:opacity-20 text-xs leading-none py-0.5">▲</button>
+            <button onClick={() => onMove(idx, 'down')} disabled={idx === benefits.length - 1} className="text-gray-400 hover:text-indigo-600 disabled:opacity-20 text-xs leading-none py-0.5">▼</button>
+          </div>
+          <button onClick={() => onRemove(idx)} className="text-red-400 text-sm hover:text-red-600 shrink-0 px-1">✕</button>
+        </div>
+      ))}
+      {hasBenefitOverflow && (
+        <p data-testid="error-benefit-overflow" className="text-red-500 text-xs">혜택 도장 수가 칸 수를 초과합니다</p>
+      )}
+      <button
+        data-testid="btn-add-benefit"
+        onClick={onAdd}
+        className="w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-sm hover:border-indigo-300 hover:text-indigo-400 transition-colors"
+      >
+        + 혜택 추가
+      </button>
+    </div>
+  );
+}
+
 /** 도장판 추가 바텀 시트 (SC-06) */
 export default function AddBoardSheet({
   isOpen, onClose, onSubmit, initialData, totalBoardCount = 0, prevBoardName,
@@ -154,49 +216,6 @@ export default function AddBoardSheet({
   const previewBenefits = benefits.map((b, i) => ({
     ...b, id: `preview-benefit-${i}`, isAchieved: false, isUsed: false,
   }));
-
-  // 혜택 편집 UI (공용)
-  function BenefitEditor() {
-    return (
-      <div className="space-y-2">
-        {benefits.map((b, idx) => (
-          <div key={idx} className="flex items-center gap-1.5 p-2.5 bg-gray-50 rounded-xl">
-            <span className="w-5 h-5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
-            <input
-              data-testid={`benefit-stamps-${idx}`}
-              type="number"
-              value={b.requiredStamps}
-              onChange={e => updateBenefitStamps(idx, Number(e.target.value))}
-              className="w-12 px-1 py-1 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 text-sm text-center"
-              min={1}
-            />
-            <input
-              type="text"
-              value={b.description}
-              onChange={e => updateBenefitDesc(idx, e.target.value)}
-              placeholder="혜택 내용"
-              className="flex-1 px-2 py-1 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 text-sm"
-            />
-            <div className="flex flex-col shrink-0">
-              <button onClick={() => moveBenefit(idx, 'up')} disabled={idx === 0} className="text-gray-400 hover:text-indigo-600 disabled:opacity-20 text-xs leading-none py-0.5">▲</button>
-              <button onClick={() => moveBenefit(idx, 'down')} disabled={idx === benefits.length - 1} className="text-gray-400 hover:text-indigo-600 disabled:opacity-20 text-xs leading-none py-0.5">▼</button>
-            </div>
-            <button onClick={() => removeBenefit(idx)} className="text-red-400 text-sm hover:text-red-600 shrink-0 px-1">✕</button>
-          </div>
-        ))}
-        {hasBenefitOverflow && (
-          <p data-testid="error-benefit-overflow" className="text-red-500 text-xs">혜택 도장 수가 칸 수를 초과합니다</p>
-        )}
-        <button
-          data-testid="btn-add-benefit"
-          onClick={addBenefit}
-          className="w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-sm hover:border-indigo-300 hover:text-indigo-400 transition-colors"
-        >
-          + 혜택 추가
-        </button>
-      </div>
-    );
-  }
 
   return (
     <BottomSheet
@@ -343,7 +362,15 @@ export default function AddBoardSheet({
             {showAdvanced && (
               <div className="mt-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">혜택 설정</label>
-                <BenefitEditor />
+                <BenefitEditor
+                  benefits={benefits}
+                  hasBenefitOverflow={hasBenefitOverflow}
+                  onUpdateStamps={updateBenefitStamps}
+                  onUpdateDesc={updateBenefitDesc}
+                  onRemove={removeBenefit}
+                  onMove={moveBenefit}
+                  onAdd={addBenefit}
+                />
               </div>
             )}
           </div>
@@ -351,7 +378,15 @@ export default function AddBoardSheet({
           /* ── 풀 모드: 혜택 편집 ── */
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">혜택 설정</label>
-            <BenefitEditor />
+            <BenefitEditor
+              benefits={benefits}
+              hasBenefitOverflow={hasBenefitOverflow}
+              onUpdateStamps={updateBenefitStamps}
+              onUpdateDesc={updateBenefitDesc}
+              onRemove={removeBenefit}
+              onMove={moveBenefit}
+              onAdd={addBenefit}
+            />
           </div>
         )}
 
