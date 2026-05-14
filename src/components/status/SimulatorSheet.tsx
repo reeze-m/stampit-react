@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BottomSheet from '../common/BottomSheet';
 import type { StampBoard, Schedule } from '../../types';
 import { simulateNewBoards, runSimulator } from '../../utils/simulator';
@@ -61,6 +61,10 @@ export default function SimulatorSheet({ isOpen, onClose, boards, schedules = []
   const [views, setViews] = useState(10);
   const [allBenefits, setAllBenefits] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) setAllBenefits(false);
+  }, [isOpen]);
+
   // 미래 미확정 일정 수 (오늘 포함)
   const today = todayKSTString();
   const futureCount = schedules.filter(
@@ -77,11 +81,13 @@ export default function SimulatorSheet({ isOpen, onClose, boards, schedules = []
   const maxThreshold = templateBoard
     ? Math.max(...templateBoard.benefits.map(b => b.requiredStamps))
     : 0;
-  const canGuaranteeAll = !allBenefits || views >= maxThreshold;
 
   // ── Step 1: 기존 도장판에 먼저 배분 ──
   const existingResult = views > 0 ? runSimulator(boards, views) : null;
   const leftoverViews = existingResult?.leftoverViews ?? views;
+
+  // 모든 혜택 보장 가능 여부는 신규 도장판에 실제로 사용되는 leftoverViews 기준
+  const canGuaranteeAll = !allBenefits || leftoverViews >= maxThreshold;
   const hasExistingAllocation =
     existingResult?.boardResults.some(r => r.stampsAdded > 0) ?? false;
   const viewsUsedOnExisting = views - leftoverViews;
@@ -206,9 +212,11 @@ export default function SimulatorSheet({ isOpen, onClose, boards, schedules = []
             {allBenefits && !canGuaranteeAll && (
               <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl">
                 <p className="text-xs text-amber-700">
+                  신규 도장판에 쓸 수 있는 잔여 횟수가{' '}
+                  <span className="font-bold">{leftoverViews}회</span>예요.
                   모든 혜택을 받으려면 최소{' '}
-                  <span className="font-bold">{maxThreshold}회</span>가 필요해요.
-                  현재 횟수로는 우선순위 기준으로 배분해드릴게요.
+                  <span className="font-bold">{maxThreshold}회</span>가 필요해서
+                  우선순위 기준으로 배분해드릴게요.
                 </p>
               </div>
             )}
