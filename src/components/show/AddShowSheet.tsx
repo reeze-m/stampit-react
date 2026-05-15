@@ -116,6 +116,7 @@ export default function AddShowSheet({ isOpen, onClose, onSubmit, mode = 'add', 
   }
 
   return (
+    <>
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
@@ -271,5 +272,6 @@ export default function AddShowSheet({ isOpen, onClose, onSubmit, mode = 'add', 
         onCrop={handleCropDone}
       />
     )}
+    </>
   );
 }
