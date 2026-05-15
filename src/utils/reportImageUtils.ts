@@ -1,7 +1,7 @@
 import html2canvas from 'html2canvas';
 
 export async function saveReportAsImage(
-  elementRef: React.RefObject<HTMLDivElement>,
+  elementRef: React.RefObject<HTMLDivElement | null>,
   showName: string
 ): Promise<void> {
   if (!elementRef.current) return;
