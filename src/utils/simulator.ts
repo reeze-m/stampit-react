@@ -74,6 +74,9 @@ export function runSimulator(
         return a.board.sortOrder - b.board.sortOrder;
       });
 
+    // 모든 활성 도장판의 혜택이 달성됐으면 나머지는 신규 도장판용 leftover로 남김
+    if (ranked[0].distance === Infinity) break;
+
     const target = ranked[0].board;
 
     // 도장 1개 추가

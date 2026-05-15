@@ -2,6 +2,7 @@
 import BottomSheet from '../common/BottomSheet';
 import Button from '../common/Button';
 import Input from '../common/Input';
+import ImageCropModal from '../common/ImageCropModal';
 
 // 6가지 색상 프리셋
 export const COLOR_PRESETS = [
@@ -45,6 +46,8 @@ export default function AddShowSheet({ isOpen, onClose, onSubmit, mode = 'add', 
   const [endDate, setEndDate] = useState(initialData?.endDate || '');
   const [color, setColor] = useState(initialData?.color || COLOR_PRESETS[0]);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | undefined>(initialData?.headerImageUrl);
+  const [cropSrc, setCropSrc] = useState('');
+  const [isCropOpen, setIsCropOpen] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; date?: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,13 +67,21 @@ export default function AddShowSheet({ isOpen, onClose, onSubmit, mode = 'add', 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setHeaderImageUrl(ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-    // 같은 파일 재선택 가능하도록 value 초기화
+    const objectUrl = URL.createObjectURL(file);
+    setCropSrc(objectUrl);
+    setIsCropOpen(true);
     e.target.value = '';
+  }
+
+  function handleCropDone(base64: string) {
+    setHeaderImageUrl(base64);
+    setIsCropOpen(false);
+    URL.revokeObjectURL(cropSrc);
+  }
+
+  function handleCropClose() {
+    setIsCropOpen(false);
+    URL.revokeObjectURL(cropSrc);
   }
 
   function validateDates(start: string, end: string): string | undefined {
@@ -249,5 +260,14 @@ export default function AddShowSheet({ isOpen, onClose, onSubmit, mode = 'add', 
 
       </div>
     </BottomSheet>
+
+    {cropSrc && (
+      <ImageCropModal
+        imageSrc={cropSrc}
+        isOpen={isCropOpen}
+        onClose={handleCropClose}
+        onCrop={handleCropDone}
+      />
+    )}
   );
 }

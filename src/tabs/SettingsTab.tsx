@@ -11,6 +11,7 @@ import PwaInstallGuide from '../components/settings/PwaInstallGuide';
 import SpecialEventSheet from '../components/settings/SpecialEventSheet';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import SectionHeader from '../components/common/SectionHeader';
+import ShowReportSheet from '../components/archive/ShowReportSheet';
 
 interface SettingsTabProps {
   show: Show;
@@ -31,6 +32,7 @@ function ChevronRight() {
 /** V-10: 설정 탭 */
 export default function SettingsTab({ show, onOpenTabOrder }: SettingsTabProps) {
   const {
+    shows,
     schedules,
     addSeatGrade, updateSeatGrade, deleteSeatGrade,
     addDiscountType, updateDiscountType, deleteDiscountType,
@@ -49,6 +51,8 @@ export default function SettingsTab({ show, onOpenTabOrder }: SettingsTabProps) 
   const [expandedDiscountId, setExpandedDiscountId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [specialEventSheetOpen, setSpecialEventSheetOpen] = useState(false);
+  const [reportShow, setReportShow] = useState<typeof shows[0] | null>(null);
+  const archivedShows = shows.filter(s => s.isArchived && !s.isCancelled);
   const [resetStep, setResetStep] = useState(0);
   const [resetInput, setResetInput] = useState('');
   const [eventFormOpen, setEventFormOpen] = useState(false);
@@ -372,6 +376,53 @@ export default function SettingsTab({ show, onOpenTabOrder }: SettingsTabProps) 
           <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
         </div>
 
+        {/* ── 보관된 공연 ──────────────────────────────── */}
+        {archivedShows.length > 0 && (
+          <>
+            <SectionHeader title="보관된 공연" />
+            <div className="bg-white rounded-2xl overflow-hidden mx-4 shadow-sm">
+              {archivedShows.map((s, i) => {
+                const archivedDateStr = s.report?.generatedAt
+                  ? new Date(s.report.generatedAt).toLocaleDateString('ko-KR', {
+                      year: 'numeric', month: '2-digit', day: '2-digit',
+                    }).replace(/\. /g, '.').replace('.', '')
+                  : null;
+
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setReportShow(s)}
+                    className={`w-full flex items-center justify-between px-4 py-3.5 text-left active:bg-gray-50 ${
+                      i < archivedShows.length - 1 ? 'border-b border-gray-100' : ''
+                    }`}
+                  >
+                    {/* 왼쪽: 이모지 + 공연명 + 보관일 */}
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      <span className="text-[18px] leading-none shrink-0">🎭</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[15px] font-semibold text-gray-800 truncate">{s.name}</p>
+                        {archivedDateStr && (
+                          <p className="text-xs text-gray-400 mt-0.5">{archivedDateStr} 보관</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 오른쪽: 리포트 보기 버튼 */}
+                    {s.report && (
+                      <span className="shrink-0 ml-3 text-xs font-semibold text-indigo-600 flex items-center gap-0.5">
+                        리포트 보기
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         {/* ── 위험 ──────────────────────────────────── */}
         <SectionHeader title="위험" />
         <div className="bg-white rounded-2xl overflow-hidden mx-4 shadow-sm">
@@ -498,6 +549,15 @@ export default function SettingsTab({ show, onOpenTabOrder }: SettingsTabProps) 
         onDelete={(id) => deleteDiscountType(show.id, id)}
         onSoftDelete={(id) => softDeleteDiscountType(show.id, id)}
       />
+
+      {/* 보관된 공연 리포트 시트 */}
+      {reportShow && (
+        <ShowReportSheet
+          isOpen={!!reportShow}
+          onClose={() => setReportShow(null)}
+          show={reportShow}
+        />
+      )}
     </div>
   );
 }

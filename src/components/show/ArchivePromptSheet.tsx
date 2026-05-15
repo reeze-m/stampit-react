@@ -56,25 +56,27 @@ export default function ArchivePromptSheet({
 
         {/* 내용 */}
         <div className="px-6 pt-5 pb-8">
-          <p className="text-lg font-bold text-gray-900 mb-1 truncate">{show.name}</p>
+          <p className="text-lg font-bold text-gray-900 mb-1">
+            🎭 {show.name} 공연이 종료됐어요
+          </p>
           <p className="text-sm text-gray-500 mb-6">
-            공연이 종료되었어요.<br />보관함으로 이동할까요?
+            보관하면 관람 리포트를 확인할 수 있어요 ✨
           </p>
 
           <div className="flex gap-3">
             <button
               data-testid="btn-archive-dismiss"
               onClick={() => onDismiss(show.id)}
-              className="flex-1 py-3 rounded-2xl bg-gray-100 text-gray-600 text-sm font-medium active:bg-gray-200"
+              className="py-3 px-5 rounded-2xl bg-gray-100 text-gray-600 text-sm font-medium active:bg-gray-200 shrink-0"
             >
-              괜찮아요
+              나중에
             </button>
             <button
               data-testid="btn-archive-confirm"
               onClick={() => onArchive(show.id)}
               className="flex-1 py-3 rounded-2xl bg-indigo-600 text-white text-sm font-semibold active:bg-indigo-800"
             >
-              보관하기
+              보관하고 리포트 보기
             </button>
           </div>
         </div>

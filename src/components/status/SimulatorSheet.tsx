@@ -62,7 +62,13 @@ export default function SimulatorSheet({ isOpen, onClose, boards, schedules = []
   const [allBenefits, setAllBenefits] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) setAllBenefits(false);
+    if (isOpen) {
+      // 시트를 열 때마다 상태 초기화: 미래 일정이 있으면 그 수로, 없으면 10회
+      setViews(futureCount > 0 ? Math.min(99, futureCount) : 10);
+      setAllBenefits(false);
+    }
+  // futureCount는 열릴 때 한 번만 읽으면 되므로 isOpen만 의존
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // 미래 미확정 일정 수 (오늘 포함)

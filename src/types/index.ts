@@ -6,6 +6,43 @@ export interface SpecialEvent {
   createdAt: string;
 }
 
+export interface ShowReport {
+  generatedAt: string;         // 리포트 생성 시각 (ISO)
+
+  // 관람 통계
+  totalVisits: number;         // 총 관람 횟수 (나눔 포함)
+  confirmedVisits: number;     // 확정 관람 횟수
+  firstVisitDate: string;      // 첫 관람일 (YYYY-MM-DD)
+  lastVisitDate: string;       // 마지막 관람일 (YYYY-MM-DD)
+
+  // 비용
+  totalSpent: number;          // 총 지출 (취소·나눔 제외)
+  totalSaved: number;          // 총 절약 금액 (originalPrice - finalPrice 합산)
+
+  // 도장판
+  completedBoards: number;     // 완성된 판 수
+  totalStamps: number;         // 총 적립 도장 수
+
+  // 혜택
+  achievedBenefits: {
+    description: string;       // 혜택명
+    count: number;             // 달성 횟수 (도장판 여러 개 합산)
+    usedCount: number;         // 사용 완료 횟수
+  }[];
+
+  // 캐스트 (관람 횟수 내림차순 상위 5)
+  topCasts: {
+    name: string;
+    count: number;
+  }[];
+
+  // 특별 이벤트 (참여 횟수 내림차순)
+  specialEventSummary: {
+    name: string;
+    count: number;
+  }[];
+}
+
 export interface Show {
   id: string;
   name: string;
@@ -25,6 +62,7 @@ export interface Show {
   isCancelled?: boolean;
   cancelledAt?: string;
   archivePromptDismissed?: boolean;
+  report?: ShowReport;         // 아카이브 시 자동 생성, 이후 수정 없음
 }
 
 export interface SeatGrade {

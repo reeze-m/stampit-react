@@ -7,6 +7,7 @@ import OnboardingScreen from './screens/OnboardingScreen';
 import MainScreen from './screens/MainScreen';
 import QuickStartSheet from './components/show/QuickStartSheet';
 import ArchivePromptSheet from './components/show/ArchivePromptSheet';
+import ShowReportSheet from './components/archive/ShowReportSheet';
 import Toast from './components/common/Toast';
 import { todayKSTString } from './utils/dateUtils';
 
@@ -14,7 +15,7 @@ type AppState = 'splash' | 'onboarding' | 'main';
 
 /** 메인 앱 컴포넌트 */
 export default function App() {
-  const { shows, addShow, addStampBoard, archiveShow, dismissArchivePrompt, refreshBenefits } = useShowStore();
+  const { shows, addShow, addStampBoard, archiveShow, dismissArchivePrompt, refreshBenefits, pendingReportShowId, clearPendingReport } = useShowStore();
   const { settings, setOnboardingDone, setQuickStartDone } = useSettingsStore();
   const { message: errorMessage, clear: clearError } = useErrorToastStore();
 
@@ -214,6 +215,20 @@ export default function App() {
           onClose={clearError}
         />
       )}
+
+      {/* 아카이브 직후 리포트 자동 표시 */}
+      {(() => {
+        const reportShow = pendingReportShowId
+          ? shows.find(s => s.id === pendingReportShowId) ?? null
+          : null;
+        return reportShow ? (
+          <ShowReportSheet
+            isOpen={true}
+            onClose={clearPendingReport}
+            show={reportShow}
+          />
+        ) : null;
+      })()}
     </>
   );
 }

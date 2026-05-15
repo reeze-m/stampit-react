@@ -13,6 +13,7 @@ import type {
   Stamp,
 } from '../types';
 import { nowKST, todayKSTString } from '../utils/dateUtils';
+import { generateShowReport } from '../utils/reportUtils';
 import { calcFinalPrice } from '../utils/priceCalc';
 import { allocateStamps } from '../utils/stampAllocator';
 import { SPECIAL_EVENT_PRESETS } from '../constants/specialEventPresets';
@@ -140,6 +141,10 @@ interface ShowStore {
    * 확정 도장의 earnedAt(YYYY-MM-DD)이 오늘 이전인 경우만 혜택 달성으로 인정
    */
   refreshBenefits: () => void;
+
+  // 리포트 모달 트리거
+  pendingReportShowId: string | null;
+  clearPendingReport: () => void;
 }
 
 interface StorageData {
@@ -218,6 +223,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
   return {
     shows: initial.shows,
     schedules: initial.schedules,
+    pendingReportShowId: null,
 
     // ===== 공연 CRUD =====
     addShow: (data) => {
@@ -258,11 +264,17 @@ export const useShowStore = create<ShowStore>((set, get) => {
       });
     },
 
-    archiveShow: (id) => {
+    archiveShow: (showId) => {
       set(state => {
-        const shows = state.shows.map(s => (s.id === id ? { ...s, isArchived: true } : s));
+        const show = state.shows.find(s => s.id === showId);
+        if (!show) return {};
+
+        const report = generateShowReport(show, state.schedules);
+        const shows = state.shows.map(s =>
+          s.id === showId ? { ...s, isArchived: true, report } : s
+        );
         saveData(shows, state.schedules);
-        return { shows };
+        return { shows, pendingReportShowId: showId };
       });
     },
 
@@ -273,6 +285,8 @@ export const useShowStore = create<ShowStore>((set, get) => {
         return { shows };
       });
     },
+
+    clearPendingReport: () => set({ pendingReportShowId: null }),
 
     dismissArchivePrompt: (id) => {
       set(state => {
