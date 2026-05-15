@@ -82,9 +82,17 @@ describe('QuickConfirmCard', () => {
     expect(screen.getByText(/77,000/)).toBeInTheDocument();
   });
 
-  test('확정하기 버튼 클릭 → onConfirm(scheduleId) 호출', () => {
+  test('확정하기 버튼 클릭 → onQuickConfirm(scheduleId) 호출 (체크리스트 없음)', () => {
+    const onQuickConfirm = vi.fn();
+    render(<QuickConfirmCard {...baseProps} onQuickConfirm={onQuickConfirm} />);
+    fireEvent.click(screen.getByTestId('quick-confirm-btn'));
+    expect(onQuickConfirm).toHaveBeenCalledWith('sc1');
+  });
+
+  test('재관람표 할인 → 버튼 클릭 시 onConfirm(scheduleId) 호출', () => {
     const onConfirm = vi.fn();
-    render(<QuickConfirmCard {...baseProps} onConfirm={onConfirm} />);
+    const discount = makeDiscount({ isRebook: true });
+    render(<QuickConfirmCard {...baseProps} discountTypes={[discount]} onConfirm={onConfirm} />);
     fireEvent.click(screen.getByTestId('quick-confirm-btn'));
     expect(onConfirm).toHaveBeenCalledWith('sc1');
   });
@@ -119,16 +127,16 @@ describe('QuickConfirmCard', () => {
     expect(screen.getByText(/55,000/)).toBeInTheDocument();
   });
 
-  test('isRebook → 재관람표 지참 배지 노출', () => {
+  test('isRebook → 재관람표 챙기기 안내 노출', () => {
     const discount = makeDiscount({ isRebook: true });
     render(<QuickConfirmCard {...baseProps} discountTypes={[discount]} />);
-    expect(screen.getByText(/재관람표 지참/)).toBeInTheDocument();
+    expect(screen.getByText(/재관람표를 챙기세요/)).toBeInTheDocument();
   });
 
-  test('isCoupon → 쿠폰 지참 배지 노출', () => {
+  test('isCoupon → 쿠폰 챙기기 안내 노출', () => {
     const discount = makeDiscount({ isCoupon: true });
     render(<QuickConfirmCard {...baseProps} discountTypes={[discount]} />);
-    expect(screen.getByText(/쿠폰 지참/)).toBeInTheDocument();
+    expect(screen.getByText(/쿠폰을 챙기세요/)).toBeInTheDocument();
   });
 
   test('더블적립(multiplier>1) 표시', () => {

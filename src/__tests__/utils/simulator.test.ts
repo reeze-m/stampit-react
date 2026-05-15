@@ -68,7 +68,8 @@ describe('runSimulator', () => {
     const board = makeBoard('b1', 5, 5);
     const result = runSimulator([board], 5);
     expect(result.totalBenefits).toBe(0);
-    expect(result.boardResults[0].stampsAdded).toBe(0);
+    // 완성된 판은 boardResults에서 제외됨
+    expect(result.boardResults).toHaveLength(0);
   });
 
   test('활성 판 없으면 혜택 0개', () => {
