@@ -153,6 +153,7 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
         {/* U-03 FocusCard — 추천 배너 대체 */}
         <FocusCard
           boards={show.stampBoards}
+          today={today}
           onScrollToBoard={boardId => {
             boardSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             // 약간 지연 후 해당 보드 강조 스크롤 (boardSectionRef 이후에 있음)

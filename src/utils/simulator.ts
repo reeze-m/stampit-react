@@ -24,10 +24,14 @@ function cloneBoards(boards: StampBoard[]): StampBoard[] {
  *
  * 매 회차마다 "다음 미달성 혜택까지 남은 도장 수"가 가장 적은 판에 도장 1개 배분.
  * 동률 시 sortOrder 낮은 판 우선. 달성할 혜택이 없는 판은 후순위.
+ *
+ * @param allBenefits false(기본): 기존 판에서 다음 혜택 1개만 달성 후 신규 판으로 넘김
+ *                   true: 기존 판의 모든 혜택을 달성할 때까지 배분
  */
 export function runSimulator(
   boards: StampBoard[],
-  remainingViews: number
+  remainingViews: number,
+  allBenefits: boolean = false,
 ): SimulatorResult & { leftoverViews: number } {
   const sim = cloneBoards(boards).filter(b => b.isActive && !b.isCompleted && !b.isHidden);
 
@@ -50,9 +54,12 @@ export function runSimulator(
     achievedMap[b.id] = [];
   }
 
+  // allBenefits=false 일 때 다음 혜택 달성 후 배분 중단된 판
+  const saturated = new Set<string>();
+
   let usedViews = 0;
   for (let i = 0; i < remainingViews; i++) {
-    const active = sim.filter(b => !b.isCompleted);
+    const active = sim.filter(b => !b.isCompleted && !saturated.has(b.id));
     if (active.length === 0) break;
     usedViews++;
 
@@ -99,6 +106,11 @@ export function runSimulator(
           requiredStamps: benefit.requiredStamps,
         });
       }
+    }
+
+    // allBenefits=false: 이번 시뮬에서 첫 혜택 달성 후 해당 판 배분 종료 → 잔여는 신규 판으로
+    if (!allBenefits && achievedMap[target.id].length > 0) {
+      saturated.add(target.id);
     }
 
     // 완성 체크

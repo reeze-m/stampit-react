@@ -103,11 +103,19 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
   const manualAllocSchedule = manualAllocId ? showSchedules.find(s => s.id === manualAllocId) || null : null;
 
   /** SC-09: 확정 직전 신규 달성 혜택 계산 */
-  function computeAchieved(allocations: BoardAllocation[]): AchievedData | null {
+  function computeAchieved(allocations: BoardAllocation[], scheduleDate: string): AchievedData | null {
+    const today = todayKSTString();
+    const isFutureDate = scheduleDate > today; // 미래 일정이면 팝업 안 띄움
+    if (isFutureDate) return null;
+
     for (const alloc of allocations) {
       const board = show.stampBoards.find(b => b.id === alloc.boardId);
       if (!board) continue;
-      const newCount = board.stamps.length + alloc.stamps;
+      // 실제 도장(오늘 이전) 수 기준으로 달성 체크
+      const realStamps = board.stamps.filter(s =>
+        s.isConfirmed && (!s.earnedAt || s.earnedAt.slice(0, 10) <= today)
+      ).length;
+      const newCount = realStamps + alloc.stamps;
       const newlyAchieved = board.benefits.find(b => !b.isAchieved && b.requiredStamps <= newCount);
       if (newlyAchieved) {
         const remainingUnachieved = board.benefits.filter(b => !b.isAchieved).length;
@@ -130,7 +138,8 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
     if (cast !== undefined) {
       updateSchedule(id, { cast });
     }
-    const achieved = computeAchieved(allocations);
+    const schedule = showSchedules.find(s => s.id === id);
+    const achieved = computeAchieved(allocations, schedule?.date ?? todayKSTString());
     confirmSchedule(id, allocations);
     setConfirmingId(null);
     if (achieved) setAchievedData(achieved);
@@ -156,7 +165,8 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
     const allocations: BoardAllocation[] = recommendedBoard
       ? [{ boardId: recommendedBoard.id, stamps: multiplier }]
       : [];
-    const achieved = computeAchieved(allocations);
+    const targetSchedule = showSchedules.find(s => s.id === scheduleId);
+    const achieved = computeAchieved(allocations, targetSchedule?.date ?? todayKSTString());
     confirmSchedule(scheduleId, allocations);
     if (achieved) setAchievedData(achieved);
     setQuickConfirmToast({ stampCount: multiplier, boardName: recommendedBoard?.name ?? null });

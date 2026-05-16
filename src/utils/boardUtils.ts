@@ -11,13 +11,17 @@ export interface NextBenefitInfo {
  * 활성 도장판 중 다음 미달성 혜택까지 남은 도장이 가장 적은 판 반환
  * 동률 시 sortOrder 낮은 순
  */
-export function getNextBenefitInfo(boards: StampBoard[]): NextBenefitInfo | null {
+export function getNextBenefitInfo(boards: StampBoard[], today: string): NextBenefitInfo | null {
   const activeBoards = boards.filter(b => b.isActive && !b.isCompleted);
   if (activeBoards.length === 0) return null;
 
   const candidates = activeBoards
     .map(board => {
-      const currentStamps = board.stamps.filter(s => s.isConfirmed).length;
+      // 오늘 이전 도장만 카운트 (예비 제외)
+      const currentStamps = board.stamps.filter(s =>
+        s.isConfirmed &&
+        (!s.earnedAt || s.earnedAt.slice(0, 10) <= today)
+      ).length;
       const nextBenefit = board.benefits
         .filter(b => !b.isAchieved)
         .sort((a, b) => a.requiredStamps - b.requiredStamps)[0];

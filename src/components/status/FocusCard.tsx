@@ -3,12 +3,13 @@ import { getNextBenefitInfo, areAllBenefitsAchieved } from '../../utils/boardUti
 
 interface FocusCardProps {
   boards: StampBoard[];
+  today: string; // ✅ 추가
   onScrollToBoard: (boardId: string) => void;
   onAddBoard: () => void;
 }
 
 /** 현황 탭 핵심 정보 강조 카드 (U-03) */
-export default function FocusCard({ boards, onScrollToBoard, onAddBoard }: FocusCardProps) {
+export default function FocusCard({ boards, today, onScrollToBoard, onAddBoard }: FocusCardProps) {
   const activeBoards = boards.filter(b => b.isActive && !b.isCompleted);
 
   // C. 활성 판 없음 → 미노출
@@ -41,7 +42,7 @@ export default function FocusCard({ boards, onScrollToBoard, onAddBoard }: Focus
     );
   }
 
-  const info = getNextBenefitInfo(boards);
+  const info = getNextBenefitInfo(boards, today);
 
   // A. 진행 중인 혜택 있음
   if (info) {

@@ -89,7 +89,7 @@ export default function SimulatorSheet({ isOpen, onClose, boards, schedules = []
     : 0;
 
   // ── Step 1: 기존 도장판에 먼저 배분 ──
-  const existingResult = views > 0 ? runSimulator(boards, views) : null;
+  const existingResult = views > 0 ? runSimulator(boards, views, allBenefits) : null;
   const leftoverViews = existingResult?.leftoverViews ?? views;
 
   // 모든 혜택 보장 가능 여부는 신규 도장판에 실제로 사용되는 leftoverViews 기준
