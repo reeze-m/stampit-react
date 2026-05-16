@@ -206,13 +206,14 @@ export default function SimulatorSheet({ isOpen, onClose, boards, schedules = []
               <button
                 data-testid="simulator-toggle"
                 onClick={() => setAllBenefits(v => !v)}
-                className={`relative w-12 h-6 rounded-full transition-colors shrink-0 overflow-hidden ${
+                className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${
                   allBenefits && leftoverViews > 0 ? 'bg-indigo-500' : 'bg-gray-200'
                 }`}
               >
                 <span
-                  className="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform"
-                  style={{ transform: allBenefits ? 'translateX(24px)' : 'translateX(0)' }}
+                  className={`absolute top-[2px] w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${
+                    allBenefits ? 'left-[26px]' : 'left-[2px]'
+                  }`}
                 />
               </button>
             </div>
