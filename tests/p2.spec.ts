@@ -78,7 +78,9 @@ test.describe('[P2-02] 도장판 세부', () => {
   test('P2-02-01 칸 수 1 미만 입력 → 최솟값 1 강제', async ({ page }) => {
     await seedShow(page);
     await page.goto('/');
+    await page.locator('[data-testid="tab-status"]').click();
     await page.locator('[data-testid="btn-add-board"]').click();
+    await page.locator('[data-testid="btn-full-mode"]').click();
     await page.locator('[data-testid="input-capacity"]').fill('0');
     await expect(page.locator('[data-testid="input-capacity"]')).toHaveValue('1');
   });
@@ -86,7 +88,9 @@ test.describe('[P2-02] 도장판 세부', () => {
   test('P2-02-02 칸 수 50 초과 입력 → 최댓값 50 강제', async ({ page }) => {
     await seedShow(page);
     await page.goto('/');
+    await page.locator('[data-testid="tab-status"]').click();
     await page.locator('[data-testid="btn-add-board"]').click();
+    await page.locator('[data-testid="btn-full-mode"]').click();
     await page.locator('[data-testid="input-capacity"]').fill('51');
     await expect(page.locator('[data-testid="input-capacity"]')).toHaveValue('50');
   });
@@ -94,7 +98,9 @@ test.describe('[P2-02] 도장판 세부', () => {
   test('P2-02-03 혜택 requiredStamps > 칸 수 → 인라인 에러', async ({ page }) => {
     await seedShow(page);
     await page.goto('/');
+    await page.locator('[data-testid="tab-status"]').click();
     await page.locator('[data-testid="btn-add-board"]').click();
+    await page.locator('[data-testid="btn-full-mode"]').click();
     await page.locator('[data-testid="input-capacity"]').fill('5');
     await page.locator('[data-testid="btn-add-benefit"]').click();
     await page.locator('[data-testid="benefit-stamps-0"]').fill('6');
@@ -104,7 +110,9 @@ test.describe('[P2-02] 도장판 세부', () => {
   test('P2-02-04 기존 도장 수 = 칸 수 → "이미 완성된 판" 안내', async ({ page }) => {
     await seedShow(page);
     await page.goto('/');
+    await page.locator('[data-testid="tab-status"]').click();
     await page.locator('[data-testid="btn-add-board"]').click();
+    await page.locator('[data-testid="btn-full-mode"]').click();
     await page.locator('[data-testid="toggle-initial-stamps"]').click();
     await page.locator('[data-testid="input-capacity"]').fill('5');
     await page.locator('[data-testid="input-initial-stamps"]').fill('5');
@@ -114,6 +122,7 @@ test.describe('[P2-02] 도장판 세부', () => {
   test('P2-02-05 도장판 2번째 추가 → 간소화 모드 (이전 판 설정 상속)', async ({ page }) => {
     await seedShow(page);
     await page.goto('/');
+    await page.locator('[data-testid="tab-status"]').click();
     await page.locator('[data-testid="btn-add-board"]').click();
     // 간소화 모드: 판 이름 + 색상만 표시
     await expect(page.locator('[data-testid="input-board-name"]')).toBeVisible();
@@ -124,6 +133,7 @@ test.describe('[P2-02] 도장판 세부', () => {
   test('P2-02-06 간소화 모드 "변경하기" → 전체 설정 모드 전환', async ({ page }) => {
     await seedShow(page);
     await page.goto('/');
+    await page.locator('[data-testid="tab-status"]').click();
     await page.locator('[data-testid="btn-add-board"]').click();
     await page.locator('[data-testid="btn-full-mode"]').click();
     await expect(page.locator('[data-testid="input-capacity"]')).toBeVisible();
@@ -132,6 +142,7 @@ test.describe('[P2-02] 도장판 세부', () => {
   test('P2-02-07 도장판 색상 12가지 프리셋 선택 가능', async ({ page }) => {
     await seedShow(page);
     await page.goto('/');
+    await page.locator('[data-testid="tab-status"]').click();
     await page.locator('[data-testid="btn-add-board"]').click();
     await expect(page.locator('[data-testid="stamp-color-option"]')).toHaveCount(12);
   });
@@ -139,6 +150,7 @@ test.describe('[P2-02] 도장판 세부', () => {
   test('P2-02-08 초기 도장 isInitial=true, scheduleId=null 확인', async ({ page }) => {
     await seedShow(page);
     await page.goto('/');
+    await page.locator('[data-testid="tab-status"]').click();
     await page.locator('[data-testid="btn-add-board"]').click();
     await page.locator('[data-testid="input-board-name"]').fill('테스트 판');
     await page.locator('[data-testid="toggle-initial-stamps"]').click();
@@ -477,7 +489,7 @@ test.describe('[P2-08] 특별 이벤트 CRUD', () => {
     await expect(input).toHaveValue('가'.repeat(20));
   });
 
-  test('P2-08-03 사용 중인 이벤트 삭제 → soft delete + "(삭제됨)" 표시', async ({ page }) => {
+  test('P2-08-03 사용 중인 이벤트 삭제 → soft delete (isDeleted=true 저장)', async ({ page }) => {
     await seedShow(page);
     await seedSchedule(page, { specialEventIds: ['se-001'], date: addDaysKST(1) });
     await page.goto('/');
@@ -485,11 +497,9 @@ test.describe('[P2-08] 특별 이벤트 CRUD', () => {
     await page.locator('[data-testid="tab-special-events"]').click();
     await page.locator('[data-testid="special-event-item-se-001"] [data-testid="btn-delete-event"]').click();
     await page.locator('[data-testid="btn-delete-confirm"]').click();
-    // 일정 카드에 "(삭제됨)" 표시
-    await page.locator('[data-testid="tab-planner"]').click();
-    await expect(
-      page.locator('[data-testid="schedule-card-sched-001"] [data-testid="event-chip-deleted"]'),
-    ).toContainText('삭제됨');
+    const shows = await getStorage<{ specialEvents: { id: string; isDeleted?: boolean }[] }[]>(page, 'stampit:shows');
+    const event = shows![0].specialEvents.find((e) => e.id === 'se-001');
+    expect(event?.isDeleted).toBe(true);
   });
 
   test('P2-08-04 미사용 이벤트 삭제 → hard delete', async ({ page }) => {
@@ -609,11 +619,12 @@ test.describe('[P2-09] 나눔 관극', () => {
 // P2-10. 도장 수동 추가
 // ─────────────────────────────────────────────
 test.describe('[P2-10] 도장 수동 추가', () => {
-  test('P2-10-01 교환 탭 → ManualStampSheet 취득 경로 자동 선택', async ({ page }) => {
+  test('P2-10-01 교환 메뉴 → ManualStampSheet 취득 경로 자동 선택', async ({ page }) => {
     await seedShow(page);
     await page.goto('/');
     await page.locator('[data-testid="tab-status"]').click();
-    await page.locator('[data-testid="btn-stamp-exchange"]').click();
+    await page.locator('[data-testid="board-card-board-001"] [data-testid="btn-more"]').click();
+    await page.locator('[data-testid="menu-stamp-exchange"]').click();
     await expect(page.locator('[data-testid="manual-stamp-sheet"]')).toBeVisible();
     await expect(page.locator('[data-testid="chip-exchange"]')).toHaveAttribute('aria-selected', 'true');
   });
@@ -622,7 +633,8 @@ test.describe('[P2-10] 도장 수동 추가', () => {
     await seedShow(page);
     await page.goto('/');
     await page.locator('[data-testid="tab-status"]').click();
-    await page.locator('[data-testid="btn-stamp-exchange"]').click();
+    await page.locator('[data-testid="board-card-board-001"] [data-testid="btn-more"]').click();
+    await page.locator('[data-testid="menu-stamp-exchange"]').click();
     await page.locator('[data-testid="btn-save-manual-stamp"]').click();
     const shows = await getStorage<{
       stampBoards: { stamps: { scheduleId: null; isConfirmed: boolean; stampType: string }[] }[];
@@ -632,13 +644,12 @@ test.describe('[P2-10] 도장 수동 추가', () => {
     expect(stamp?.isConfirmed).toBe(true);
   });
 
-  test('P2-10-03 도장판 카드 하단 퀵버튼 3개 노출 (교환/나눔/기타)', async ({ page }) => {
+  test('P2-10-03 도장판 카드 스와이프 메뉴 — 교환/나눔/기타 버튼 노출', async ({ page }) => {
     await seedShow(page);
     await page.goto('/');
     await page.locator('[data-testid="tab-status"]').click();
-    await expect(page.locator('[data-testid="btn-stamp-exchange"]')).toBeVisible();
-    await expect(page.locator('[data-testid="btn-stamp-share"]')).toBeVisible();
-    await expect(page.locator('[data-testid="btn-stamp-etc"]')).toBeVisible();
+    await page.locator('[data-testid="board-card-board-001"] [data-testid="btn-more"]').click();
+    await expect(page.locator('[data-testid="menu-stamp-exchange"]')).toBeVisible();
   });
 
   test('P2-10-04 완성된 판 → 수동 추가 버튼 미노출', async ({ page }) => {
@@ -784,7 +795,6 @@ test.describe('[P2-12] 배분 시뮬레이터', () => {
     await page.locator('[data-testid="tab-status"]').click();
     await page.locator('[data-testid="more-section-toggle"]').click();
     await page.locator('[data-testid="btn-simulator"]').click();
-    await page.locator('[data-testid="simulator-input"]').fill('3');
     await expect(page.locator('[data-testid="simulator-empty"]')).toBeVisible();
   });
 

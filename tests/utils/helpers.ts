@@ -195,6 +195,29 @@ export async function seedSchedule(page: Page, opts: SeedScheduleOpts = {}) {
   );
 }
 
+export async function seedStamps(page: Page, count: number) {
+  await installBridge(page);
+  await page.goto('/');
+  await page.evaluate(
+    ({ key, count: n }) => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      const stamps = Array.from({ length: n }, (_, i) => ({
+        id: `stamp-${i + 1}`,
+        scheduleId: null,
+        isInitial: true,
+        isConfirmed: true,
+        stampType: 'initial',
+        earnedAt: new Date().toISOString(),
+      }));
+      data.shows[0].stampBoards[0].stamps = stamps;
+      localStorage.setItem(key, JSON.stringify(data));
+    },
+    { key: STORAGE_KEY, count }
+  );
+}
+
 export async function setStorage(page: Page, shows: unknown[]) {
   await installBridge(page);
   await page.goto('/');

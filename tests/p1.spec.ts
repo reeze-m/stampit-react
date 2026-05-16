@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   seedShow,
   seedSchedule,
+  seedStamps,
   clearStorage,
   setStorage,
   getStorage,
@@ -15,12 +16,23 @@ import {
 test.describe('P1-01 확정 시트 멀티플라이어', () => {
   async function openConfirmSheet(page: Parameters<Parameters<typeof test>[1]>[0]) {
     await seedShow(page);
+    // add a multiplier event so multiplier-2 selector appears
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('stampit_react_v1');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      data.shows[0].events.push({
+        id: 'event-mul', showId: 'show-001', name: '더블 스탬프',
+        startDate: '2026-01-01', endDate: '2030-12-31',
+        multiplier: 2, isDeleted: false,
+      });
+      localStorage.setItem('stampit_react_v1', JSON.stringify(data));
+    });
     await seedSchedule(page, { status: 'draft' });
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await page.getByTestId('schedule-card').first().tap();
-    await page.getByTestId('btn-confirm').tap();
-    await expect(page.getByTestId('bottomsheet-confirm')).toBeVisible();
+    await page.locator('[data-testid^="schedule-card-"]').first().locator('[data-testid="btn-confirm"]').tap();
+    await expect(page.getByTestId('confirm-sheet')).toBeVisible();
   }
 
   test('P1-01-01 확정 시트 열기', async ({ page }) => {
@@ -55,9 +67,8 @@ test.describe('P1-02 확정 시트 재관람·초과', () => {
     await seedSchedule(page, { discountTypeId: 'disc-rebook', status: 'draft' });
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await page.getByTestId('schedule-card').first().tap();
-    await page.getByTestId('btn-confirm').tap();
-    await expect(page.getByTestId('bottomsheet-confirm')).toBeVisible();
+    await page.locator('[data-testid^="schedule-card-"]').first().locator('[data-testid="btn-confirm"]').tap();
+    await expect(page.getByTestId('confirm-sheet')).toBeVisible();
   }
 
   test('P1-02-01 재관람 할인 스케줄 시트 열기', async ({ page }) => {
@@ -66,13 +77,13 @@ test.describe('P1-02 확정 시트 재관람·초과', () => {
 
   test('P1-02-02 재관람 체크박스 표시 확인', async ({ page }) => {
     await openRebookConfirmSheet(page);
-    await expect(page.getByTestId('checkbox-rebook')).toBeVisible();
+    await expect(page.getByTestId('checklist-rebook')).toBeVisible();
   });
 
   test('P1-02-03 판 꽉 찼을 때 초과 경고', async ({ page }) => {
     await openRebookConfirmSheet(page);
     await page.getByTestId('select-board-board-001').tap();
-    await expect(page.getByTestId('bottomsheet-confirm')).toBeVisible();
+    await expect(page.getByTestId('confirm-sheet')).toBeVisible();
   });
 });
 
@@ -100,38 +111,33 @@ test.describe('P1-03 혜택 달성 모달', () => {
     });
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await page.getByTestId('schedule-card').first().tap();
-    await page.getByTestId('btn-confirm').tap();
-    await page.getByTestId('select-board-board-001').tap();
+    await page.locator('[data-testid^="schedule-card-"]').first().locator('[data-testid="btn-confirm"]').tap();
     await page.getByTestId('btn-confirm-submit').tap();
-    await expect(page.getByTestId('modal-benefit-achieved')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('benefit-achieved-modal')).toBeVisible({ timeout: 5000 });
   });
 
   test('P1-03-02 계속 사용 버튼', async ({ page }) => {
     await seedShow(page);
     await seedSchedule(page, { status: 'draft' });
-    await page.evaluate(() => {
-      const raw = localStorage.getItem('stampit_react_v1');
+    await page.evaluate((key: string) => {
+      const raw = localStorage.getItem(key);
       if (!raw) return;
       const data = JSON.parse(raw);
-      const show = data.shows.find((s: Record<string, unknown>) => s.id === 'show-001');
-      if (!show) return;
-      const board = show.stampBoards.find((b: Record<string, unknown>) => b.id === 'board-001');
+      const board = data.shows?.[0]?.stampBoards?.find((b: Record<string, unknown>) => b.id === 'board-001');
       if (!board) return;
-      board.stamps = Array.from({ length: 4 }, (_, i) => ({
-        id: `stamp-${i}`, scheduleId: `sched-pre-${i}`, isInitial: false, isConfirmed: true, earnedAt: '2026-01-01T00:00:00.000Z'
+      board.stamps = Array.from({ length: 4 }, (_: unknown, i: number) => ({
+        id: `stamp-${i}`, scheduleId: null, isInitial: true, isConfirmed: true,
+        stampType: 'initial', earnedAt: '2026-01-01T00:00:00.000Z'
       }));
-      localStorage.setItem('stampit_react_v1', JSON.stringify(data));
-    });
+      localStorage.setItem(key, JSON.stringify(data));
+    }, 'stampit_react_v1');
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await page.getByTestId('schedule-card').first().tap();
-    await page.getByTestId('btn-confirm').tap();
-    await page.getByTestId('select-board-board-001').tap();
+    await page.locator('[data-testid^="schedule-card-"]').first().locator('[data-testid="btn-confirm"]').tap();
     await page.getByTestId('btn-confirm-submit').tap();
-    await expect(page.getByTestId('modal-benefit-achieved')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('benefit-achieved-modal')).toBeVisible({ timeout: 5000 });
     await page.getByTestId('btn-benefit-continue').tap();
-    await expect(page.getByTestId('modal-benefit-achieved')).not.toBeVisible();
+    await expect(page.getByTestId('benefit-achieved-modal')).not.toBeVisible();
   });
 });
 
@@ -144,7 +150,6 @@ test.describe('P1-04 티켓 변경 시트', () => {
     await seedSchedule(page, { status: 'confirmed', isConfirmed: true, finalPrice: 100000 });
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-more').tap();
     await page.getByTestId('menu-ticket-change').tap();
     await expect(page.getByTestId('bottomsheet-ticket-change')).toBeVisible();
@@ -155,12 +160,11 @@ test.describe('P1-04 티켓 변경 시트', () => {
     await seedSchedule(page, { status: 'confirmed', isConfirmed: true, finalPrice: 100000 });
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-more').tap();
     await page.getByTestId('menu-ticket-change').tap();
-    await expect(page.getByTestId('select-discount-change')).toBeVisible();
-    await page.getByTestId('select-discount-change').selectOption('disc-matinee');
-    await expect(page.getByTestId('price-diff-options')).toBeVisible();
+    await expect(page.getByTestId('select-new-discount')).toBeVisible();
+    await page.getByTestId('select-new-discount').selectOption('disc-matinee');
+    await expect(page.getByTestId('price-diff-method')).toBeVisible();
   });
 
   test('P1-04-03 재계산 라디오 선택 후 저장', async ({ page }) => {
@@ -168,10 +172,9 @@ test.describe('P1-04 티켓 변경 시트', () => {
     await seedSchedule(page, { status: 'confirmed', isConfirmed: true, finalPrice: 100000, originalPrice: 100000 });
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-more').tap();
     await page.getByTestId('menu-ticket-change').tap();
-    await page.getByTestId('select-discount-change').selectOption('disc-matinee');
+    await page.getByTestId('select-new-discount').selectOption('disc-matinee');
     await page.getByTestId('radio-recalculate').tap();
     await page.getByTestId('btn-ticket-change-save').tap();
     const shows = await getStorage<Record<string, unknown>[]>(page, 'stampit:shows');
@@ -189,7 +192,6 @@ test.describe('P1-05 확정 취소', () => {
     await seedSchedule(page, { status: 'confirmed', isConfirmed: true });
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await page.getByTestId('schedule-card').first().tap();
     await page.getByTestId('btn-more').tap();
     await page.getByTestId('menu-cancel-confirm').tap();
     const shows = await getStorage<Record<string, unknown>[]>(page, 'stampit:shows');
@@ -234,41 +236,26 @@ test.describe('P1-06 탭 순서 변경', () => {
 test.describe('P1-07 혜택 사용 처리', () => {
   test('P1-07-01 달성된 혜택에 사용 버튼 표시', async ({ page }) => {
     await seedShow(page);
-    // Mark benefit-001 as achieved
-    await page.evaluate(() => {
-      const raw = localStorage.getItem('stampit_react_v1');
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      const show = data.shows.find((s: Record<string, unknown>) => s.id === 'show-001');
-      if (!show) return;
-      const board = show.stampBoards.find((b: Record<string, unknown>) => b.id === 'board-001');
-      if (!board) return;
-      const benefit = board.benefits.find((b: Record<string, unknown>) => b.id === 'benefit-001');
-      if (benefit) benefit.isAchieved = true;
-      localStorage.setItem('stampit_react_v1', JSON.stringify(data));
-    });
+    await seedStamps(page, 5);
+    const raw1 = await page.evaluate((k: string) => localStorage.getItem(k), 'stampit_react_v1');
+    const data1 = JSON.parse(raw1!);
+    data1.shows[0].stampBoards[0].benefits[0].isAchieved = true;
+    await page.evaluate(({ k, v }: { k: string; v: string }) => localStorage.setItem(k, v), { k: 'stampit_react_v1', v: JSON.stringify(data1) });
     await page.goto('/');
-    await page.getByTestId('tab-status').tap();
+    await page.locator('[data-testid="tab-status"]').click();
     await expect(page.getByTestId('btn-use-benefit').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('P1-07-02 쿠폰 혜택 사용 처리', async ({ page }) => {
     await seedShow(page);
-    await page.evaluate(() => {
-      const raw = localStorage.getItem('stampit_react_v1');
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      const show = data.shows.find((s: Record<string, unknown>) => s.id === 'show-001');
-      if (!show) return;
-      const board = show.stampBoards.find((b: Record<string, unknown>) => b.id === 'board-001');
-      if (!board) return;
-      const benefit = board.benefits.find((b: Record<string, unknown>) => b.id === 'benefit-001');
-      if (benefit) benefit.isAchieved = true;
-      localStorage.setItem('stampit_react_v1', JSON.stringify(data));
-    });
+    await seedStamps(page, 5);
+    const raw2 = await page.evaluate((k: string) => localStorage.getItem(k), 'stampit_react_v1');
+    const data2 = JSON.parse(raw2!);
+    data2.shows[0].stampBoards[0].benefits[0].isAchieved = true;
+    await page.evaluate(({ k, v }: { k: string; v: string }) => localStorage.setItem(k, v), { k: 'stampit_react_v1', v: JSON.stringify(data2) });
     await page.goto('/');
-    await page.getByTestId('tab-status').tap();
-    await page.getByTestId('btn-use-benefit').first().tap();
+    await page.locator('[data-testid="tab-status"]').click();
+    await page.getByTestId('btn-use-benefit').first().click();
     // Coupon benefits might show a confirm dialog
     const confirmBtn = page.getByTestId('btn-use-confirm');
     if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -293,7 +280,7 @@ test.describe('P1-08 빠른 확정 카드', () => {
     await seedShow(page);
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await expect(page.getByTestId('quick-confirm-empty')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('no-today-schedule')).toBeVisible({ timeout: 5000 });
   });
 
   test('P1-08-02 오늘 일정 있을 때 카드 표시', async ({ page }) => {
@@ -308,7 +295,7 @@ test.describe('P1-08 빠른 확정 카드', () => {
     await seedShow(page);
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await expect(page.getByTestId('quick-confirm-empty')).toContainText('오늘');
+    await expect(page.getByTestId('no-today-schedule')).toContainText('오늘');
   });
 
   test('P1-08-04 빠른 확정 버튼 동작', async ({ page }) => {
@@ -316,13 +303,13 @@ test.describe('P1-08 빠른 확정 카드', () => {
     await seedSchedule(page, { date: todayKST(), status: 'draft' });
     await page.goto('/');
     await page.getByTestId('tab-planner').tap();
-    await page.getByTestId('quick-confirm-btn').tap();
+    await page.locator('[data-testid="quick-confirm-card"] [data-testid="btn-instant-confirm"], [data-testid="quick-confirm-card"] [data-testid="btn-confirm"]').first().tap();
     // After quick confirm, schedule should be confirmed or confirm sheet opens
     const shows = await getStorage<Record<string, unknown>[]>(page, 'stampit:shows');
     const sched = (shows?.[0]?.['schedules'] as Record<string, unknown>[])?.[0];
     // Either confirmed directly or confirm sheet is open
     const isConfirmed = sched?.['status'] === 'confirmed';
-    const sheetVisible = await page.getByTestId('bottomsheet-confirm').isVisible().catch(() => false);
+    const sheetVisible = await page.getByTestId('confirm-sheet').isVisible().catch(() => false);
     expect(isConfirmed || sheetVisible).toBe(true);
   });
 });
@@ -422,7 +409,7 @@ test.describe('P1-12 아카이브 제안', () => {
       },
     ]);
     await page.goto('/');
-    await expect(page.getByTestId('archive-prompt-sheet')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('archive-prompt')).toBeVisible({ timeout: 5000 });
   });
 
   test('P1-12-02 아카이브 확정', async ({ page }) => {
@@ -436,8 +423,8 @@ test.describe('P1-12 아카이브 제안', () => {
       },
     ]);
     await page.goto('/');
-    await expect(page.getByTestId('archive-prompt-sheet')).toBeVisible({ timeout: 5000 });
-    await page.getByTestId('btn-archive-confirm').tap();
+    await expect(page.getByTestId('archive-prompt')).toBeVisible({ timeout: 5000 });
+    await page.getByTestId('btn-archive-and-report').tap();
     const shows = await getStorage<Record<string, unknown>[]>(page, 'stampit:shows');
     const show = shows?.find((s) => s['id'] === 'show-old');
     expect(show?.['isArchived']).toBe(true);
@@ -454,9 +441,9 @@ test.describe('P1-12 아카이브 제안', () => {
       },
     ]);
     await page.goto('/');
-    await expect(page.getByTestId('archive-prompt-sheet')).toBeVisible({ timeout: 5000 });
-    await page.getByTestId('btn-archive-dismiss').tap();
-    await expect(page.getByTestId('archive-prompt-sheet')).not.toBeVisible();
+    await expect(page.getByTestId('archive-prompt')).toBeVisible({ timeout: 5000 });
+    await page.getByTestId('btn-later').tap();
+    await expect(page.getByTestId('archive-prompt')).not.toBeVisible();
   });
 });
 

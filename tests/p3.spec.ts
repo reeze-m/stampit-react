@@ -6,7 +6,7 @@ import {
   getStorage,
   todayKST,
   addDaysKST,
-} from '../utils/helpers';
+} from './utils/helpers';
 
 /**
  * P3 — UI 렌더링 / 엣지 케이스 / 경계값 / 사용자 흐름 세부 TC
@@ -37,10 +37,11 @@ import {
 test.describe('[P3-01] 온보딩 슬라이드 UI', () => {
 
   test.beforeEach(async ({ page }) => {
+    await page.goto('/');
     await page.evaluate((key: string) => localStorage.removeItem(key), 'stampit_react_v1');
     await page.evaluate(() => localStorage.removeItem('stampit_settings'));
     await page.goto('/');
-    await page.waitForSelector('[data-testid="onboarding-input"]');
+    await page.waitForSelector('[data-testid="input-show-name"]');
   });
 
   test('P3-01-01 온보딩 슬라이드 3개 — 인디케이터 노출', async ({ page }) => {
@@ -56,7 +57,7 @@ test.describe('[P3-01] 온보딩 슬라이드 UI', () => {
 
   test('P3-01-03 "다음" 버튼 탭 → 슬라이드 2로 이동', async ({ page }) => {
     await page.locator('[data-testid="btn-next-slide"]').click();
-    await expect(page.locator('[data-testid="slide-2"]')).toBeVisible();
+    await expect(page.locator('[data-testid="slide-indicator"]').nth(1)).toHaveAttribute('aria-selected', 'true');
   });
 
   test('P3-01-04 슬라이드 1·2 — "시작" 버튼 미노출', async ({ page }) => {
@@ -72,7 +73,7 @@ test.describe('[P3-01] 온보딩 슬라이드 UI', () => {
   });
 
   test('P3-01-06 건너뛰기 — 하단 텍스트 링크 위치', async ({ page }) => {
-    const skip = page.locator('[data-testid="btn-skip-onboarding"]');
+    const skip = page.locator('[data-testid="btn-start"]');
     await expect(skip).toBeVisible();
     const skipBox  = await skip.boundingBox();
     const viewport = page.viewportSize()!;
@@ -80,11 +81,8 @@ test.describe('[P3-01] 온보딩 슬라이드 UI', () => {
     expect(skipBox!.y).toBeGreaterThan(viewport.height * 0.6);
   });
 
-  test('P3-01-07 공연명 미입력 → 시작 버튼 비활성 (슬라이드 3)', async ({ page }) => {
-    await page.locator('[data-testid="btn-next-slide"]').click();
-    await page.locator('[data-testid="btn-next-slide"]').click();
-    await expect(page.locator('[data-testid="btn-setup-full"]')).toBeDisabled();
-    await expect(page.locator('[data-testid="btn-setup-quick"]')).toBeDisabled();
+  test('P3-01-07 공연명 미입력 → 빠른 시작 제출 버튼 비활성', async ({ page }) => {
+    await expect(page.locator('[data-testid="btn-quick-start-submit"]')).toBeDisabled();
   });
 });
 
@@ -157,11 +155,12 @@ test.describe('[P3-03] BottomNav UI', () => {
 
   test('P3-03-03 미사용 달성 혜택 1개 이상 → 현황 탭 뱃지 노출', async ({ page }) => {
     await seedShow(page);
-    await seedStamps(page, 5);
+    await seedStamps(page, 7);
     const raw = await page.evaluate((k: string) => localStorage.getItem(k), 'stampit_react_v1');
     const data = JSON.parse(raw!);
-    data.shows[0].stampBoards[0].benefits[0].isAchieved = true;
-    data.shows[0].stampBoards[0].benefits[0].isUsed = false;
+    // benefit-001 은 쿠폰형(할인쿠폰)이라 뱃지 제외 — benefit-002(포토카드)를 달성 처리
+    data.shows[0].stampBoards[0].benefits[1].isAchieved = true;
+    data.shows[0].stampBoards[0].benefits[1].isUsed = false;
     await page.evaluate(({ k, v }: { k: string; v: string }) => localStorage.setItem(k, v), { k: 'stampit_react_v1', v: JSON.stringify(data) });
     await page.goto('/');
     await expect(page.locator('[data-testid="nav-badge-status"]')).toBeVisible();
@@ -815,9 +814,9 @@ test.describe('[P3-15] 바텀시트 공통 UI', () => {
     await seedShow(page);
     await page.goto('/');
     await page.locator('[data-testid="fab-add"]').tap();
-    await page.locator('[data-testid="btn-later"]').click();
 
     const saveBtn = page.locator('[data-testid="btn-save-schedule"]');
+    await expect(saveBtn).toBeVisible({ timeout: 3000 });
     const viewport = page.viewportSize()!;
     const box = await saveBtn.boundingBox();
     // sticky: 항상 화면 하단에 위치

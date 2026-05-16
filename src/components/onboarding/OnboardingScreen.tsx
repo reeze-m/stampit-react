@@ -94,7 +94,7 @@ export default function OnboardingScreen({
 
         {/* 공연명 입력 */}
         <input
-          data-testid="onboarding-input"
+          data-testid="input-show-name"
           value={showName}
           onChange={e => setShowName(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleInlineSubmit(); }}
@@ -147,7 +147,7 @@ export default function OnboardingScreen({
 
         {/* 건너뛰기 — 하단 텍스트 링크 */}
         <button
-          data-testid="btn-skip-onboarding"
+          data-testid="btn-start"
           onClick={onSkip}
           className="text-sm text-gray-400 text-center underline underline-offset-2 mt-1 self-center"
         >
