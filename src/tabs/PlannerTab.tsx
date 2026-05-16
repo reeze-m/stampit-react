@@ -3,6 +3,7 @@ import type { Show, Schedule, BoardAllocation, Benefit } from '../types';
 import { useShowStore } from '../store/showStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUndoStore } from '../store/undoStore';
+import { saveToStorage, STORAGE_KEY } from '../store/storage';
 import QuickCalculator from '../components/planner/QuickCalculator';
 import QuickConfirmCard from '../components/planner/QuickConfirmCard';
 import CalendarView from '../components/planner/CalendarView';
@@ -175,24 +176,18 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
     deleteSchedule(scheduleId);
   }
 
-  // SC-33: Undo 실행
+  // SC-33: Undo 실행 — 원본 일정 전체를 그대로 복원 (ID·배분 정보 유지)
   function handleUndo() {
     const { action } = useUndoStore.getState();
     if (!action || action.type !== 'DELETE_SCHEDULE') return;
     const schedule = action.payload as Schedule;
-    addSchedule({
-      showId: schedule.showId,
-      date: schedule.date,
-      time: schedule.time,
-      seatGradeId: schedule.seatGradeId,
-      discountTypeId: schedule.discountTypeId,
-      finalPrice: schedule.finalPrice,
-      originalPrice: schedule.originalPrice,
-      multiplier: schedule.multiplier,
-      memo: schedule.memo,
-      cast: schedule.cast,
-      specialEventIds: schedule.specialEventIds ?? [],
-      status: 'draft',
+    // ✅ addSchedule 대신 updateSchedule+직접 삽입으로 원본 id·boardAllocations 유지
+    useShowStore.setState(state => {
+      const already = state.schedules.find(s => s.id === schedule.id);
+      if (already) return {}; // 이미 복원됨 (중복 방지)
+      const schedules = [...state.schedules, schedule];
+      saveToStorage(STORAGE_KEY, { shows: state.shows, schedules });
+      return { schedules };
     });
     clearAction();
   }

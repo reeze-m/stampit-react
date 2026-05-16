@@ -29,6 +29,7 @@ interface EditScheduleSheetProps {
     memo?: string;
     cast?: string;
     specialEventIds: string[];
+    isShare?: boolean; // ✅ 추가
   }) => void;
 }
 
@@ -51,6 +52,7 @@ export default function EditScheduleSheet({
   const [multiplier, setMultiplier] = useState(1);
   const [memo, setMemo] = useState('');
   const [cast, setCast] = useState('');
+  const [isShare, setIsShare] = useState(false); // ✅ 나눠 관극 토글
   const [specialEventIds, setSpecialEventIds] = useState<string[]>([]);
   const [specialEventSheetOpen, setSpecialEventSheetOpen] = useState(false);
   const [previewAllocations, setPreviewAllocations] = useState<BoardAllocation[]>([]);
@@ -71,6 +73,7 @@ export default function EditScheduleSheet({
     setMultiplier(schedule.multiplier);
     setMemo(schedule.memo ?? '');
     setCast(schedule.cast ?? '');
+    setIsShare(schedule.isShare ?? false); // ✅ 나눠 토글 초기화
     setSpecialEventIds(schedule.specialEventIds ?? []);
   }, [schedule, isOpen]);
 
@@ -100,6 +103,7 @@ export default function EditScheduleSheet({
       memo: memo || undefined,
       cast: cast || undefined,
       specialEventIds,
+      isShare, // ✅ 나눠 저장
     });
     onClose();
   }
@@ -235,6 +239,21 @@ export default function EditScheduleSheet({
               })}
             </div>
           )}
+
+          {/* ✅ 나눠 관극 토글 */}
+          <div className="flex items-center justify-between py-1">
+            <div>
+              <p className="text-sm font-medium text-gray-700">나눠 관극</p>
+              <p className="text-xs text-gray-400 mt-0.5">나눠 관극은 도장이 적립되지 않아요</p>
+            </div>
+            <button
+              data-testid="toggle-is-share"
+              onClick={() => setIsShare(v => !v)}
+              className={`w-12 h-6 rounded-full transition-colors ${isShare ? 'bg-indigo-600' : 'bg-gray-200'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full shadow m-0.5 transition-transform ${isShare ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>
+          </div>
 
           {/* 메모 */}
           <div>

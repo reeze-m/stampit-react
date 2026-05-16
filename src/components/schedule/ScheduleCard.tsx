@@ -232,17 +232,32 @@ export default function ScheduleCard({
           </div>
         )}
 
-        {/* 별점 인라인 입력 */}
+        {/* ✅ 별점 인라인 입력 — 수정/삭제 가능 */}
         {ratingOpen && (
           <div className="mt-2 pt-2 border-t border-gray-100">
-            <p className="text-xs text-gray-500 mb-1.5">별점을 선택하세요</p>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-xs text-gray-500">별점을 선택하세요</p>
+              {schedule.rating != null && schedule.rating > 0 && (
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    onRate?.(schedule.id, 0);
+                    setRatingOpen(false);
+                  }}
+                  className="text-[11px] text-gray-400 underline"
+                >
+                  삭제
+                </button>
+              )}
+            </div>
             <div className="flex gap-2 justify-center">
               {[1, 2, 3, 4, 5].map(star => (
                 <button
                   key={star}
                   onClick={e => {
                     e.stopPropagation();
-                    onRate?.(schedule.id, star);
+                    // 이미 선택된 별점 재탭 → 해제
+                    onRate?.(schedule.id, schedule.rating === star ? 0 : star);
                     setRatingOpen(false);
                   }}
                   className={`text-2xl transition-transform active:scale-125 ${
@@ -252,6 +267,25 @@ export default function ScheduleCard({
                   ★
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* ✅ 취소 사유/환불 금액 표시 */}
+        {isCancelled && (schedule.cancelReason || schedule.refundAmount) && (
+          <div className="mt-1.5 flex items-start gap-1.5 bg-gray-100 rounded-lg px-2.5 py-2">
+            <span className="text-gray-400 text-xs mt-0.5">📋</span>
+            <div className="space-y-0.5">
+              {schedule.cancelReason && (
+                <p className="text-xs text-gray-500">
+                  취소 사유: <span className="text-gray-700 font-medium">{schedule.cancelReason}</span>
+                </p>
+              )}
+              {schedule.refundAmount != null && schedule.refundAmount > 0 && (
+                <p className="text-xs text-gray-500">
+                  환불: <span className="text-emerald-600 font-medium">{schedule.refundAmount.toLocaleString()}원</span>
+                </p>
+              )}
             </div>
           </div>
         )}

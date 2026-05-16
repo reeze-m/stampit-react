@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { StampBoard } from '../../types';
 import StampGrid from '../common/StampGrid';
 import Badge from '../common/Badge';
+import { todayKSTString } from '../../utils/dateUtils';
 
 interface StampBoardCardProps {
   board: StampBoard;
@@ -101,7 +102,7 @@ export default function StampBoardCard({
               </div>
               <span className="text-xs bg-white/20 px-2 py-1 rounded-full font-semibold">완성! 🎉</span>
             </div>
-            <StampGrid capacity={board.capacity} stamps={board.stamps} benefits={board.benefits} stampColor={board.stampColor} />
+            <StampGrid capacity={board.capacity} stamps={board.stamps} benefits={board.benefits} stampColor={board.stampColor} today={todayKSTString()} />
           </div>
         ) : (
           // 진행 중인 판
@@ -145,7 +146,7 @@ export default function StampBoardCard({
             </div>
 
             {/* 도장 그리드 */}
-            <StampGrid capacity={board.capacity} stamps={board.stamps} benefits={board.benefits} stampColor={board.stampColor} />
+            <StampGrid capacity={board.capacity} stamps={board.stamps} benefits={board.benefits} stampColor={board.stampColor} today={todayKSTString()} />
 
             <div className="mt-3 space-y-1.5">
               {/* 도장 수 + 다음 혜택 한 줄 */}

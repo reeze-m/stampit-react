@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { loadFromStorage, saveToStorage, STORAGE_KEY } from './storage';
 import type {
   Show,
@@ -38,7 +38,6 @@ function effectiveStampCount(stamps: Stamp[], today: string): number {
   return stamps.filter(s => {
     if (s.isInitial) return true;
     if (!s.earnedAt) return true;
-    // earnedAt이 YYYY-MM-DD 또는 ISO timestamp 형식 모두 slice(0,10)으로 날짜 비교
     return s.earnedAt.slice(0, 10) <= today;
   }).length;
 }
@@ -57,13 +56,10 @@ interface ShowStore {
 
   // 도장판 CRUD
   addStampBoard: (showId: string, data: Omit<StampBoard, 'id' | 'showId' | 'stamps' | 'isActive' | 'isCompleted' | 'sortOrder' | 'createdAt'>) => string;
-  /** 이전 판 설정 복사하여 즉시 새 판 생성 (혜택 달성 모달 원탭 시작) */
   createNextBoard: (params: { showId: string; name: string; capacity: number; sourceBenefits: Benefit[]; stampColor?: string }) => string;
   updateStampBoard: (showId: string, boardId: string, data: Partial<StampBoard>) => void;
   deleteStampBoard: (showId: string, boardId: string) => void;
-  /** 확정 도장 있는 판 — 소프트 딜리트 (isHidden: true) */
   hideBoard: (showId: string, boardId: string) => void;
-  /** 숨겨진 판 복구 */
   restoreBoard: (showId: string, boardId: string) => void;
   reorderBoards: (showId: string, orderedIds: string[]) => void;
 
@@ -73,11 +69,8 @@ interface ShowStore {
   deleteBenefit: (showId: string, boardId: string, benefitId: string) => void;
   markBenefitAchieved: (showId: string, boardId: string, benefitId: string) => void;
   markBenefitUsed: (showId: string, boardId: string, benefitId: string, couponCode?: string, attachmentUrl?: string) => void;
-  /** 혜택 사용 완료 — isUsed: true, usedAt: now */
   useBenefit: (showId: string, boardId: string, benefitId: string) => void;
-  /** 혜택 사용 취소 — isUsed: false, usedAt: undefined */
   unuseBenefit: (showId: string, boardId: string, benefitId: string) => void;
-  /** 혜택 사용 방법 메모 저장 */
   updateBenefitNote: (showId: string, boardId: string, benefitId: string, note: string) => void;
 
   // 좌석 등급 CRUD
@@ -98,15 +91,8 @@ interface ShowStore {
   cancelConfirm: (scheduleId: string) => void;
   cancelSchedule: (scheduleId: string, reason?: string, refundAmount?: number) => void;
   cancelShow: (showId: string) => void;
-  /** 취소된 일정 복구 → status: 'draft', 도장 재배분은 사용자가 직접 확정 시 처리 */
   restoreSchedule: (scheduleId: string) => void;
-  /** 티켓 변경 — recalculate: 금액 재계산 / note-only: 기존 금액 유지 + 메모 */
-  changeTicket: (
-    scheduleId: string,
-    newGradeId: string,
-    newDiscountId: string,
-    method: 'recalculate' | 'note-only'
-  ) => void;
+  changeTicket: (scheduleId: string, newGradeId: string, newDiscountId: string, method: 'recalculate' | 'note-only') => void;
   softDeleteDiscountType: (showId: string, discountId: string) => void;
   updateScheduleCast: (scheduleId: string, cast: string) => void;
 
@@ -118,28 +104,23 @@ interface ShowStore {
   // 특별 이벤트 CRUD
   addSpecialEvent: (showId: string, name: string) => void;
   updateSpecialEvent: (showId: string, eventId: string, name: string) => void;
-  /** 사용 중이면 soft delete, 미사용이면 hard delete */
   deleteSpecialEvent: (showId: string, eventId: string) => void;
 
   // 데이터 관리
   exportData: () => string;
-  importData: (json: string) => void;
+  importData: (json: string) => boolean; // ✅ 수정: 성공/실패 boolean 반환
   resetAllData: () => void;
 
-  // 수동 도장 추가/삭제 (4.15)
+  // 수동 도장 추가/삭제
   addManualStamp: (showId: string, boardId: string, data: { stampType: 'exchange' | 'share' | 'etc'; count: number; memo?: string; earnedAt: string }) => void;
   removeManualStamp: (showId: string, boardId: string, stampId: string) => void;
 
   // 중복 날짜 감지
   hasDuplicateDate: (showId: string, date: string, excludeScheduleId?: string) => boolean;
 
-  // 공연 탭 순서 변경 (4.16)
+  // 공연 탭 순서 변경
   reorderShows: (orderedIds: string[]) => void;
 
-  /**
-   * 날짜 기반 혜택 달성 재계산 (앱 시작 시 호출)
-   * 확정 도장의 earnedAt(YYYY-MM-DD)이 오늘 이전인 경우만 혜택 달성으로 인정
-   */
   refreshBenefits: () => void;
 
   // 리포트 모달 트리거
@@ -172,7 +153,7 @@ function loadData(): StorageData {
     return show;
   });
 
-  // 마이그레이션: tabOrder 없는 Show에 생성 순서 기준 부여 (4.16)
+  // 마이그레이션: tabOrder 없는 Show에 생성 순서 기준 부여
   data.shows = data.shows.map((show, idx) => ({
     ...show,
     tabOrder: show.tabOrder ?? idx,
@@ -185,6 +166,12 @@ function loadData(): StorageData {
     }
     return schedule;
   });
+
+  // ✅ 마이그레이션: isShare 없는 Schedule에 false 기본값
+  data.schedules = data.schedules.map(schedule => ({
+    ...schedule,
+    isShare: schedule.isShare ?? false,
+  }));
 
   // 마이그레이션: stampType 없는 Stamp에 기본값 설정
   data.shows = data.shows.map(show => ({
@@ -207,9 +194,7 @@ function loadData(): StorageData {
     })),
   }));
 
-  // 마이그레이션 결과 저장 (다음 로드 시 재적용 방지)
   saveToStorage(STORAGE_KEY, data);
-
   return data;
 }
 
@@ -237,7 +222,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
         specialEvents: makeDefaultSpecialEvents(),
         isArchived: false,
         createdAt: nowISO(),
-        tabOrder: activeCount, // 새 공연은 가장 뒤
+        tabOrder: activeCount,
       };
       set(state => {
         const shows = [...state.shows, newShow];
@@ -268,7 +253,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
       set(state => {
         const show = state.shows.find(s => s.id === showId);
         if (!show) return {};
-
         const report = generateShowReport(show, state.schedules);
         const shows = state.shows.map(s =>
           s.id === showId ? { ...s, isArchived: true, report } : s
@@ -319,7 +303,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
       const show = get().shows.find(s => s.id === showId);
       const maxSort = show ? Math.max(0, ...show.stampBoards.map(b => b.sortOrder)) : 0;
 
-      // initialStamps 만큼의 도장 미리 생성
       const initialStampsList: Stamp[] = [];
       for (let i = 0; i < (data.initialStamps || 0); i++) {
         initialStampsList.push({
@@ -333,7 +316,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
       }
 
       const initialCount = data.initialStamps || 0;
-      // initialStamps 기준으로 이미 달성된 혜택을 isAchieved: true로 설정
       const benefitsWithInitial = (data.benefits || []).map(b => ({
         ...b,
         isAchieved: b.requiredStamps <= initialCount ? true : b.isAchieved,
@@ -388,7 +370,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
             stampBoards: s.stampBoards.filter(b => b.id !== boardId),
           };
         });
-        // 해당 보드의 미확정 스탬프 배분 제거
         const schedules = state.schedules.map(sc => {
           if (sc.showId !== showId) return sc;
           return {
@@ -457,21 +438,14 @@ export const useShowStore = create<ShowStore>((set, get) => {
 
     // ===== 혜택 CRUD =====
     addBenefit: (showId, boardId, data) => {
-      const newBenefit: Benefit = {
-        ...data,
-        id: genId(),
-        isAchieved: false,
-        isUsed: false,
-      };
+      const newBenefit: Benefit = { ...data, id: genId(), isAchieved: false, isUsed: false };
       set(state => {
         const shows = state.shows.map(s => {
           if (s.id !== showId) return s;
           return {
             ...s,
             stampBoards: s.stampBoards.map(b =>
-              b.id === boardId
-                ? { ...b, benefits: [...b.benefits, newBenefit] }
-                : b
+              b.id === boardId ? { ...b, benefits: [...b.benefits, newBenefit] } : b
             ),
           };
         });
@@ -510,10 +484,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
             ...s,
             stampBoards: s.stampBoards.map(b => {
               if (b.id !== boardId) return b;
-              return {
-                ...b,
-                benefits: b.benefits.filter(ben => ben.id !== benefitId),
-              };
+              return { ...b, benefits: b.benefits.filter(ben => ben.id !== benefitId) };
             }),
           };
         });
@@ -556,13 +527,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
                 ...b,
                 benefits: b.benefits.map(ben =>
                   ben.id === benefitId
-                    ? {
-                        ...ben,
-                        isUsed: true,
-                        usedAt: nowISO(),
-                        couponCode,
-                        attachmentUrl,
-                      }
+                    ? { ...ben, isUsed: true, usedAt: nowISO(), couponCode, attachmentUrl }
                     : ben
                 ),
               };
@@ -630,9 +595,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
       const newGrade: SeatGrade = { ...data, id: genId() };
       set(state => {
         const shows = state.shows.map(s =>
-          s.id === showId
-            ? { ...s, seatGrades: [...s.seatGrades, newGrade] }
-            : s
+          s.id === showId ? { ...s, seatGrades: [...s.seatGrades, newGrade] } : s
         );
         saveData(shows, state.schedules);
         return { shows };
@@ -645,9 +608,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
           if (s.id !== showId) return s;
           return {
             ...s,
-            seatGrades: s.seatGrades.map(g =>
-              g.id === gradeId ? { ...g, ...data } : g
-            ),
+            seatGrades: s.seatGrades.map(g => g.id === gradeId ? { ...g, ...data } : g),
           };
         });
         saveData(shows, state.schedules);
@@ -713,7 +674,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
     addSchedule: (data) => {
       const id = genId();
       const show = get().shows.find(s => s.id === data.showId);
-      // 자동 배분 미리 계산 (미확정 상태, 나눔 관극 multiplier=0이면 배분 없음)
       const allocations: BoardAllocation[] = [];
       const totalStamps = data.multiplier != null ? data.multiplier : 1;
       if (show && totalStamps > 0) {
@@ -723,6 +683,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
       const newSchedule: Schedule = {
         ...data,
         specialEventIds: data.specialEventIds ?? [],
+        isShare: data.isShare ?? false, // ✅ 기본값 보장
         id,
         boardAllocations: allocations,
         isConfirmed: false,
@@ -789,7 +750,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
       set(state => {
         const schedules = state.schedules.filter(s => s.id !== scheduleId);
         let shows = state.shows;
-        // 미확정 스케줄 삭제 시 도장 제거
         if (schedule && !schedule.isConfirmed) {
           shows = state.shows.map(show => {
             if (show.id !== schedule.showId) return show;
@@ -822,11 +782,11 @@ export const useShowStore = create<ShowStore>((set, get) => {
             ? { ...s, isConfirmed: true, status: 'confirmed' as const, confirmedAt: nowISO(), boardAllocations: allocations }
             : s
         );
-        // 각 보드에 확정 도장 추가 및 혜택 달성 체크
-        const today = todayKSTString();
-        // 미래 일정이면 혜택 달성 불가 (날짜가 당도해야 혜택 발생)
-        const dateHasPassed = schedule.date <= today;
 
+        const today = todayKSTString();
+        // ✅ 버그 수정: 미래 날짜라도 확정 시 혜택 달성 처리
+        // 이전: dateHasPassed = schedule.date <= today (미래면 혜택 달성 안 됨)
+        // 변경: 항상 혜택 달성 체크 (재관람 유저는 공연 전 수령 후 확정하는 경우가 많음)
         const shows = state.shows.map(show => {
           if (show.id !== schedule.showId) return show;
           const boards = show.stampBoards.map(board => {
@@ -839,16 +799,15 @@ export const useShowStore = create<ShowStore>((set, get) => {
                 scheduleId,
                 isInitial: false,
                 isConfirmed: true,
-                // 관람 날짜를 earnedAt으로 사용 (확정 시각이 아닌 실제 관람일)
                 earnedAt: schedule.date,
                 stampType: 'visit' as const,
               });
             }
             const updatedStamps = [...board.stamps, ...newStamps];
-            // 혜택 달성은 날짜가 지난 도장 수 기준으로 체크
-            const effectiveCount = effectiveStampCount(updatedStamps, today);
+            // 전체 도장 수 기준으로 혜택 달성 체크 (날짜 무관)
+            const totalCount = updatedStamps.length;
             const updatedBenefits = board.benefits.map(b => {
-              if (!b.isAchieved && dateHasPassed && b.requiredStamps <= effectiveCount) {
+              if (!b.isAchieved && b.requiredStamps <= totalCount) {
                 return { ...b, isAchieved: true };
               }
               return b;
@@ -867,7 +826,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
       });
     },
 
-    // ===== SC-29: 확정 취소 =====
     cancelConfirm: (scheduleId) => {
       const schedule = get().schedules.find(s => s.id === scheduleId);
       if (!schedule || !schedule.isConfirmed) return;
@@ -878,7 +836,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
             ? { ...s, isConfirmed: false, status: 'draft' as const }
             : s
         );
-        // 해당 scheduleId로 적립된 확정 도장 제거 + 혜택 재계산
         const shows = state.shows.map(show => {
           if (show.id !== schedule.showId) return show;
           return {
@@ -904,7 +861,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
       });
     },
 
-    // ===== SC-30: 일정 취소 불참 =====
     cancelSchedule: (scheduleId, reason, refundAmount) => {
       const schedule = get().schedules.find(s => s.id === scheduleId);
       if (!schedule) return;
@@ -924,7 +880,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
             : s
         );
         let shows = state.shows;
-        // 확정 일정이었다면 도장 회수 + 혜택 재계산
         if (wasConfirmed) {
           shows = state.shows.map(show => {
             if (show.id !== schedule.showId) return show;
@@ -952,7 +907,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
       });
     },
 
-    // ===== M-03: 취소 일정 복구 =====
     restoreSchedule: (scheduleId) => {
       set(state => {
         const schedules = state.schedules.map(s => {
@@ -966,14 +920,12 @@ export const useShowStore = create<ShowStore>((set, get) => {
       });
     },
 
-    // ===== SC-30: 공연 전체 취소 =====
     cancelShow: (showId) => {
       set(state => {
         const now = nowISO();
         const shows = state.shows.map(s =>
           s.id === showId ? { ...s, isCancelled: true, cancelledAt: now } : s
         );
-        // 미완성 판의 모든 일정 취소 + 도장 회수
         const show = state.shows.find(s => s.id === showId);
         if (!show) { saveData(shows, state.schedules); return { shows }; }
 
@@ -981,15 +933,14 @@ export const useShowStore = create<ShowStore>((set, get) => {
         const schedules = state.schedules.map(s => {
           if (s.showId !== showId) return s;
           if (s.status === 'cancelled') return s;
-          // 미완성 판에 배분된 일정만 취소
-          const hasIncompleindigoloc = s.boardAllocations.some(a => incompleteBoardIds.has(a.boardId));
-          if (hasIncompleindigoloc) {
+          // ✅ 오타 수정: hasIncompleindigoloc → hasIncompleteAllocation
+          const hasIncompleteAllocation = s.boardAllocations.some(a => incompleteBoardIds.has(a.boardId));
+          if (hasIncompleteAllocation) {
             return { ...s, status: 'cancelled' as const, isConfirmed: false, cancelledAt: now };
           }
           return s;
         });
 
-        // 취소된 일정에서 도장 회수 (미완성 판)
         const cancelledIds = new Set(
           schedules.filter((s, idx) => s.status === 'cancelled' && state.schedules[idx]?.status !== 'cancelled').map(s => s.id)
         );
@@ -1014,7 +965,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
       });
     },
 
-    // ===== SC-32: 소프트 삭제 권종 =====
     softDeleteDiscountType: (showId, discountId) => {
       set(state => {
         const shows = state.shows.map(s => {
@@ -1026,7 +976,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
             ),
           };
         });
-        // 미확정 일정 중 해당 discountTypeId를 가진 것: discountTypeId = ''
         const schedules = state.schedules.map(s => {
           if (s.showId !== showId) return s;
           if (s.isConfirmed) return s;
@@ -1038,7 +987,6 @@ export const useShowStore = create<ShowStore>((set, get) => {
       });
     },
 
-    // ===== SC-31: 캐스트 업데이트 =====
     updateScheduleCast: (scheduleId, cast) => {
       set(state => {
         const schedules = state.schedules.map(s =>
@@ -1054,9 +1002,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
       const newEvent: StampEvent = { ...data, id: genId() };
       set(state => {
         const shows = state.shows.map(s =>
-          s.id === showId
-            ? { ...s, events: [...s.events, newEvent] }
-            : s
+          s.id === showId ? { ...s, events: [...s.events, newEvent] } : s
         );
         saveData(shows, state.schedules);
         return { shows };
@@ -1067,12 +1013,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
       set(state => {
         const shows = state.shows.map(s => {
           if (s.id !== showId) return s;
-          return {
-            ...s,
-            events: s.events.map(e =>
-              e.id === eventId ? { ...e, ...data } : e
-            ),
-          };
+          return { ...s, events: s.events.map(e => e.id === eventId ? { ...e, ...data } : e) };
         });
         saveData(shows, state.schedules);
         return { shows };
@@ -1082,9 +1023,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
     deleteStampEvent: (showId, eventId) => {
       set(state => {
         const shows = state.shows.map(s =>
-          s.id === showId
-            ? { ...s, events: s.events.filter(e => e.id !== eventId) }
-            : s
+          s.id === showId ? { ...s, events: s.events.filter(e => e.id !== eventId) } : s
         );
         saveData(shows, state.schedules);
         return { shows };
@@ -1093,17 +1032,10 @@ export const useShowStore = create<ShowStore>((set, get) => {
 
     // ===== 특별 이벤트 CRUD =====
     addSpecialEvent: (showId, name) => {
-      const newEvent: SpecialEvent = {
-        id: genId(),
-        name,
-        isPreset: false,
-        createdAt: nowISO(),
-      };
+      const newEvent: SpecialEvent = { id: genId(), name, isPreset: false, createdAt: nowISO() };
       set(state => {
         const shows = state.shows.map(s =>
-          s.id === showId
-            ? { ...s, specialEvents: [...s.specialEvents, newEvent] }
-            : s
+          s.id === showId ? { ...s, specialEvents: [...s.specialEvents, newEvent] } : s
         );
         saveData(shows, state.schedules);
         return { shows };
@@ -1114,12 +1046,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
       set(state => {
         const shows = state.shows.map(s => {
           if (s.id !== showId) return s;
-          return {
-            ...s,
-            specialEvents: s.specialEvents.map(e =>
-              e.id === eventId ? { ...e, name } : e
-            ),
-          };
+          return { ...s, specialEvents: s.specialEvents.map(e => e.id === eventId ? { ...e, name } : e) };
         });
         saveData(shows, state.schedules);
         return { shows };
@@ -1128,9 +1055,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
 
     deleteSpecialEvent: (showId, eventId) => {
       const { schedules } = get();
-      const isInUse = schedules.some(
-        s => s.showId === showId && s.specialEventIds.includes(eventId)
-      );
+      const isInUse = schedules.some(s => s.showId === showId && s.specialEventIds.includes(eventId));
       set(state => {
         const shows = state.shows.map(s => {
           if (s.id !== showId) return s;
@@ -1150,15 +1075,21 @@ export const useShowStore = create<ShowStore>((set, get) => {
       return JSON.stringify({ shows, schedules }, null, 2);
     },
 
+    // ✅ 수정: 성공/실패 boolean 반환 (실패 시 기존 데이터 유지)
     importData: (json) => {
       try {
         const data = JSON.parse(json) as StorageData;
+        // 최소한의 유효성 검사
+        if (!Array.isArray(data.shows) || !Array.isArray(data.schedules)) {
+          return false;
+        }
         const shows = data.shows || [];
         const schedules = data.schedules || [];
         saveData(shows, schedules);
         set({ shows, schedules });
+        return true;
       } catch {
-        // 파싱 실패 시 무시
+        return false;
       }
     },
 
@@ -1167,7 +1098,7 @@ export const useShowStore = create<ShowStore>((set, get) => {
       set({ shows: [], schedules: [] });
     },
 
-    // ===== 수동 도장 추가/삭제 (4.15) =====
+    // ===== 수동 도장 추가/삭제 =====
     addManualStamp: (showId, boardId, data) => {
       set(state => {
         const shows = state.shows.map(show => {
@@ -1235,17 +1166,12 @@ export const useShowStore = create<ShowStore>((set, get) => {
       });
     },
 
-    // ===== 중복 날짜 감지 =====
     hasDuplicateDate: (showId, date, excludeScheduleId) => {
       return get().schedules.some(
-        s =>
-          s.showId === showId &&
-          s.date === date &&
-          s.id !== excludeScheduleId
+        s => s.showId === showId && s.date === date && s.id !== excludeScheduleId
       );
     },
 
-    // ===== 공연 탭 순서 변경 (4.16) =====
     reorderShows: (orderedIds) => {
       set(state => {
         const shows = state.shows.map(show => {
@@ -1266,10 +1192,9 @@ export const useShowStore = create<ShowStore>((set, get) => {
             const effective = effectiveStampCount(board.stamps, today);
             const updatedBenefits = board.benefits.map(b => ({
               ...b,
-              // 이미 달성된 혜택은 유지, 미달성은 effective count 기준 재평가
               isAchieved: b.isAchieved
-                ? b.requiredStamps <= effective   // 취소 등으로 도장이 줄었다면 해제 가능
-                : b.requiredStamps <= effective,  // 날짜가 지나 새로 달성
+                ? b.requiredStamps <= effective
+                : b.requiredStamps <= effective,
             }));
             return { ...board, benefits: updatedBenefits };
           }),

@@ -8,10 +8,11 @@ interface StampGridProps {
   benefits: Benefit[];
   previewInitial?: number; // 미리보기용: 초기 도장 수
   stampColor?: string;     // 도장 색상 (hex)
+  today?: string;          // YYYY-MM-DD, 없으면 모두 실제 도장으로 처리
 }
 
 /** 도장판 그리드 컴포넌트 */
-export default function StampGrid({ capacity, stamps, benefits, previewInitial, stampColor = DEFAULT_STAMP_COLOR }: StampGridProps) {
+export default function StampGrid({ capacity, stamps, benefits, previewInitial, stampColor = DEFAULT_STAMP_COLOR, today }: StampGridProps) {
   const cols = Math.min(7, capacity);
   const benefitPositions = new Set(benefits.map(b => b.requiredStamps));
 
@@ -20,6 +21,18 @@ export default function StampGrid({ capacity, stamps, benefits, previewInitial, 
   const initialCount = previewInitial !== undefined
     ? previewInitial
     : stamps.filter(s => s.isInitial).length;
+
+  const previewCount = previewInitial !== undefined
+    ? 0
+    : stamps.filter(s =>
+        !s.isInitial &&
+        today &&
+        s.earnedAt &&
+        s.earnedAt.slice(0, 10) > today
+      ).length;
+
+  // 예비 도장이 시작되는 인덱스
+  const previewStartIdx = filledCount - previewCount;
 
   return (
     <div
@@ -35,17 +48,20 @@ export default function StampGrid({ capacity, stamps, benefits, previewInitial, 
 
         return (
           <div key={idx} className="relative aspect-square" data-testid="stamp-cell" data-slot={`stamp-slot-${idx}`}>
-            {isFilled ? (
-              /* 찍힌 도장: 원형 */
-              <div
-                className="w-full h-full rounded-full"
-                style={{
-                  backgroundColor: stampColor,
-                  opacity: isInitialSlot ? 0.4 : 1,
-                  boxShadow: isInitialSlot ? 'none' : '0 1px 4px rgba(0,0,0,0.18)',
-                }}
-              />
-            ) : (
+            {isFilled ? (() => {
+              const isPreview = slotNum > previewStartIdx && previewCount > 0;
+              return (
+                /* 찍힌 도장: 원형 */
+                <div
+                  className="w-full h-full rounded-full"
+                  style={{
+                    backgroundColor: stampColor,
+                    opacity: isInitialSlot ? 0.4 : isPreview ? 0.3 : 1,
+                    boxShadow: (isInitialSlot || isPreview) ? 'none' : '0 1px 4px rgba(0,0,0,0.18)',
+                  }}
+                />
+              );
+            })() : (
               /* 빈 슬롯: 점선 원형 */
               <div className="w-full h-full rounded-full border-2 border-dashed border-gray-200 bg-white/60" />
             )}

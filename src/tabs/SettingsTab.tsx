@@ -11,6 +11,7 @@ import PwaInstallGuide from '../components/settings/PwaInstallGuide';
 import SpecialEventSheet from '../components/settings/SpecialEventSheet';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import SectionHeader from '../components/common/SectionHeader';
+import Toast from '../components/common/Toast';
 import ShowReportSheet from '../components/archive/ShowReportSheet';
 
 interface SettingsTabProps {
@@ -58,6 +59,7 @@ export default function SettingsTab({ show, onOpenTabOrder }: SettingsTabProps) 
   const [eventFormOpen, setEventFormOpen] = useState(false);
   const [eventForm, setEventForm] = useState(DEFAULT_EVENT);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [importToast, setImportToast] = useState<{ ok: boolean } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeDiscountTypes = show.discountTypes.filter(d => !d.isDeleted);
@@ -80,9 +82,12 @@ export default function SettingsTab({ show, onOpenTabOrder }: SettingsTabProps) 
     const reader = new FileReader();
     reader.onload = ev => {
       const text = ev.target?.result as string;
-      importData(text);
+      const ok = importData(text);
+      setImportToast({ ok });
+      setTimeout(() => setImportToast(null), 3000);
     };
     reader.readAsText(file);
+    e.target.value = ''; // 동일 파일 재선택 수 있도록
   }
 
   function handleReset() {
@@ -553,6 +558,19 @@ export default function SettingsTab({ show, onOpenTabOrder }: SettingsTabProps) 
         onDelete={(id) => deleteDiscountType(show.id, id)}
         onSoftDelete={(id) => softDeleteDiscountType(show.id, id)}
       />
+
+      {/* ✅ JSON 가져오기 성공/실패 토스트 */}
+      {importToast && (
+        <Toast
+          message={
+            importToast.ok
+              ? '관람 기록을 성공적으로 불러왔어요.'
+              : '파일 형식이 올바르지 않아요. 스탬핀 백업 파일(.json)을 선택해주세요.'
+          }
+          type={importToast.ok ? 'success' : 'error'}
+          onClose={() => setImportToast(null)}
+        />
+      )}
 
       {/* 보관된 공연 리포트 시트 */}
       {reportShow && (
