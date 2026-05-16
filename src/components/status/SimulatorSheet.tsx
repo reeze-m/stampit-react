@@ -155,12 +155,9 @@ export default function SimulatorSheet({ isOpen, onClose, boards, schedules = []
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">남은 관람 횟수</span>
                 {futureCount > 0 && (
-                  <button
-                    onClick={() => setViews(Math.min(99, futureCount))}
-                    className="flex items-center gap-1 text-xs text-indigo-600 font-medium bg-indigo-50 rounded-lg px-2.5 py-1 active:bg-indigo-100"
-                  >
-                    📅 예정 일정 {futureCount}회 적용
-                  </button>
+                  <span className="text-xs text-gray-400">
+                    📅 미확정 예정 {futureCount}회 기준
+                  </span>
                 )}
               </div>
             <div className="flex items-center gap-3 justify-end">

@@ -61,7 +61,6 @@ export function runSimulator(
   for (let i = 0; i < remainingViews; i++) {
     const active = sim.filter(b => !b.isCompleted && !saturated.has(b.id));
     if (active.length === 0) break;
-    usedViews++;
 
     // 각 판의 다음 미달성 혜택까지 거리 계산
     // Math.max(0, ...) 로 음수 방지
@@ -83,6 +82,8 @@ export function runSimulator(
 
     // 모든 활성 도장판의 혜택이 달성됐으면 나머지는 신규 도장판용 leftover로 남김
     if (ranked[0].distance === Infinity) break;
+
+    usedViews++; // 실제 도장을 찍을 때만 카운트
 
     const target = ranked[0].board;
 
