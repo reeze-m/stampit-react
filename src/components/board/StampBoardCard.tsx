@@ -137,7 +137,7 @@ export default function StampBoardCard({
                 <button
                   data-testid="btn-more"
                   onClick={e => { e.stopPropagation(); setSwiped(s => !s); }}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 active:text-gray-600"
+                  className="min-w-[32px] min-h-[32px] flex items-center justify-center text-gray-400 active:text-gray-600 text-sm"
                 >
                   ···
                 </button>
