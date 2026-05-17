@@ -20,6 +20,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 import SectionHeader from '../components/common/SectionHeader';
 import { isCouponBenefit } from '../utils/benefitUtils';
 import { todayKSTString } from '../utils/dateUtils';
+import { sortBoardsByNextBenefit } from '../utils/boardUtils';
 import PendingAlertBanner from '../components/planner/PendingAlertBanner';
 
 interface StatusTabProps {
@@ -32,7 +33,7 @@ let _moreExpandedCache = false;
 
 /** 현황 탭 */
 export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
-  const { schedules, addStampBoard, updateStampBoard, deleteStampBoard, hideBoard, reorderBoards, addManualStamp } = useShowStore();
+  const { schedules, addStampBoard, updateStampBoard, deleteStampBoard, hideBoard, addManualStamp } = useShowStore();
   const { settings } = useSettingsStore();
   const [addBoardOpen, setAddBoardOpen] = useState(false);
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
@@ -167,8 +168,11 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
 
         {/* 도장판 */}
         {(() => {
-          // 숨겨진 판은 현황 탭 목록에서 제외
-          const sortedBoards = [...show.stampBoards].filter(b => !b.isHidden).sort((a, b) => a.sortOrder - b.sortOrder);
+          // 숨겨진 판은 현황 탭 목록에서 제외, 다음 혜택까지 남은 도장 수 기준 자동 정렬
+          const sortedBoards = sortBoardsByNextBenefit(
+            show.stampBoards.filter(b => !b.isHidden),
+            today
+          );
           const activeBoards = sortedBoards.filter(b => !b.isCompleted);
 
           /** M-02: 도장판 삭제 3-case 분기 */
@@ -194,17 +198,6 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
             return bAt.localeCompare(aAt);
           });
           const firstActiveId = activeBoards.find(b => b.isActive)?.id;
-
-          function moveBoard(boardId: string, direction: 'up' | 'down') {
-            const ids = sortedBoards.map(b => b.id);
-            const idx = ids.indexOf(boardId);
-            if (direction === 'up' && idx > 0) {
-              [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
-            } else if (direction === 'down' && idx < ids.length - 1) {
-              [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
-            }
-            reorderBoards(show.id, ids);
-          }
 
           return (
             <section ref={boardSectionRef} className="space-y-3">
@@ -247,8 +240,6 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
                       isFirst={board.id === firstActiveId}
                       onEdit={(boardId) => setEditingBoardId(boardId)}
                       onDelete={handleDeleteBoard}
-                      onMoveUp={index > 0 ? () => moveBoard(board.id, 'up') : undefined}
-                      onMoveDown={index < activeBoards.length - 1 ? () => moveBoard(board.id, 'down') : undefined}
                       onAddStamp={(boardId, type) => { setAddStampBoardId(boardId); setAddStampInitialType(type); }}
                     />
                   ))}

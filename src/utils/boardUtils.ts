@@ -1,5 +1,33 @@
 import type { StampBoard } from '../types';
 
+/**
+ * 도장판 하나의 "다음 미달성 혜택까지 남은 도장 수" 계산 (예비 도장 제외)
+ * 남은 혜택이 없으면 Infinity 반환
+ */
+function distanceToNextBenefit(board: StampBoard, today: string): number {
+  const currentStamps = board.stamps.filter(s =>
+    s.isConfirmed && (!s.earnedAt || s.earnedAt.slice(0, 10) <= today)
+  ).length;
+  const nextBenefit = board.benefits
+    .filter(b => !b.isAchieved)
+    .sort((a, b) => a.requiredStamps - b.requiredStamps)[0];
+  if (!nextBenefit) return Infinity;
+  return nextBenefit.requiredStamps - currentStamps;
+}
+
+/**
+ * 활성 도장판 목록을 "다음 혜택까지 남은 도장 수" 기준 오름차순 정렬
+ * (혜택 없는 판은 뒤로, 동률이면 sortOrder 낮은 순)
+ */
+export function sortBoardsByNextBenefit(boards: StampBoard[], today: string): StampBoard[] {
+  return [...boards].sort((a, b) => {
+    const da = distanceToNextBenefit(a, today);
+    const db = distanceToNextBenefit(b, today);
+    if (da !== db) return da - db;
+    return a.sortOrder - b.sortOrder;
+  });
+}
+
 export interface NextBenefitInfo {
   boardId: string;
   boardName: string;

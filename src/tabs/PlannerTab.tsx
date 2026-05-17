@@ -25,6 +25,8 @@ import QuickAddSheet from '../components/planner/QuickAddSheet';
 import PendingAlertBanner from '../components/planner/PendingAlertBanner';
 import { todayKSTString } from '../utils/dateUtils';
 import { colors } from '../constants/tokens';
+import { sortBoardsByNextBenefit } from '../utils/boardUtils';
+import CalcIcon from '../components/common/icons/CalcIcon';
 
 
 interface PlannerTabProps {
@@ -155,9 +157,10 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
   /** 원탭 즉시 확정 (체크리스트 불필요 일정) */
   function handleQuickConfirm(scheduleId: string) {
     const multiplier = showSchedules.find(s => s.id === scheduleId)?.multiplier ?? 1;
-    const activeBoards = [...show.stampBoards]
-      .filter(b => b.isActive && !b.isCompleted)
-      .sort((a, b) => a.sortOrder - b.sortOrder);
+    const activeBoards = sortBoardsByNextBenefit(
+      show.stampBoards.filter(b => b.isActive && !b.isCompleted),
+      today
+    );
     const recommendedBoard =
       activeBoards.find(b => b.capacity - b.stamps.length >= multiplier && b.benefits.some(ben => !ben.isAchieved))
       ?? activeBoards.find(b => b.capacity - b.stamps.length >= multiplier)
@@ -329,7 +332,7 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
             className="w-full h-[48px] flex items-center justify-between px-4 active:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <span className="text-base leading-none">🧮</span>
+              <CalcIcon size={20} />
               <span className="text-[14px] font-semibold text-gray-700">빠른 계산기</span>
             </div>
             {calcOpen ? (

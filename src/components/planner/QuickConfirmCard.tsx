@@ -2,6 +2,9 @@ import { useState } from 'react';
 import type { Schedule, SeatGrade, DiscountType, StampBoard, SpecialEvent } from '../../types';
 import { formatMoney } from '../../utils/priceCalc';
 import Badge from '../common/Badge';
+import Slide1Tickets from '../onboarding/illustrations/Slide1Tickets';
+import { sortBoardsByNextBenefit } from '../../utils/boardUtils';
+import { todayKSTString } from '../../utils/dateUtils';
 
 interface QuickConfirmCardProps {
   /** 오늘 미확정 일정 목록 */
@@ -49,7 +52,9 @@ export default function QuickConfirmCard({
         className="bg-gray-50 border border-dashed border-gray-200 rounded-xl px-4 py-4 text-center"
         data-testid="no-today-schedule"
       >
-        <p className="text-2xl mb-1.5">🎭</p>
+        <div className="flex justify-center mb-2">
+          <Slide1Tickets />
+        </div>
         <p className="text-sm text-gray-400 font-medium">오늘 예정된 관람이 없어요</p>
         {hintText && (
           <p className="text-xs text-gray-400 mt-1">{hintText}</p>
@@ -65,10 +70,11 @@ export default function QuickConfirmCard({
   const discount = discountTypes.find(d => d.id === schedule.discountTypeId) ?? null;
   const needsChecklist = !!(discount?.isRebook || discount?.isCoupon);
 
-  // 1순위 활성 도장판
-  const targetBoard = [...stampBoards]
-    .filter(b => b.isActive && !b.isCompleted)
-    .sort((a, b) => a.sortOrder - b.sortOrder)[0] ?? null;
+  // 1순위 활성 도장판 (다음 혜택까지 가장 가까운 판)
+  const targetBoard = sortBoardsByNextBenefit(
+    stampBoards.filter(b => b.isActive && !b.isCompleted),
+    todayKSTString()
+  )[0] ?? null;
 
   // 이 일정에 붙은 특별 이벤트 칩
   const scheduleEvents = (schedule.specialEventIds ?? [])

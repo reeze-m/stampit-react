@@ -10,8 +10,6 @@ interface StampBoardCardProps {
   isFirst: boolean;
   onEdit: (boardId: string) => void;
   onDelete: (boardId: string) => void;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
   onAddStamp?: (boardId: string, type?: 'exchange' | 'share' | 'etc') => void;
 }
 
@@ -22,11 +20,9 @@ export default function StampBoardCard({
   isFirst,
   onEdit,
   onDelete,
-  onMoveUp,
-  onMoveDown,
   onAddStamp,
 }: StampBoardCardProps) {
-  const [swiped, setSwiped] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const stampCount = board.stamps.length;
 
   // 교환/나눔/기타 도장 수 집계
@@ -40,56 +36,10 @@ export default function StampBoardCard({
     .sort((a, b) => a.requiredStamps - b.requiredStamps)[0];
 
   const hasStampButtons = !!(onAddStamp && board.isActive && !board.isCompleted);
-  // swipe reveal width: stamp buttons (3×38px + 2×4px gap) + 수정/삭제 (2×50px + 1×4px gap) + pr-2
-  const swipeTranslate = hasStampButtons ? '-translate-x-[248px]' : '-translate-x-[108px]';
 
   return (
-    <div className="relative overflow-hidden rounded-2xl" data-testid={`board-card-${board.id}`} data-board-id={board.id}>
-      {/* 스와이프 액션 */}
-      {swiped && (
-        <div className="absolute right-0 top-0 bottom-0 flex items-center gap-1 pr-2 z-10">
-          {hasStampButtons && (
-            <>
-              <button
-                data-testid="menu-stamp-exchange"
-                onClick={() => { onAddStamp!(board.id, 'exchange'); setSwiped(false); }}
-                className="px-2 py-2 bg-gray-500 text-white rounded-xl text-xs font-medium min-h-[44px] whitespace-nowrap"
-              >
-                +교환
-              </button>
-              <button
-                onClick={() => { onAddStamp!(board.id, 'share'); setSwiped(false); }}
-                className="px-2 py-2 bg-gray-500 text-white rounded-xl text-xs font-medium min-h-[44px] whitespace-nowrap"
-              >
-                +나눔
-              </button>
-              <button
-                onClick={() => { onAddStamp!(board.id, 'etc'); setSwiped(false); }}
-                className="px-2 py-2 bg-gray-500 text-white rounded-xl text-xs font-medium min-h-[44px] whitespace-nowrap"
-              >
-                +기타
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => { onEdit(board.id); setSwiped(false); }}
-            className="px-3 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium min-h-[44px]"
-          >
-            수정
-          </button>
-          <button
-            onClick={() => { onDelete(board.id); setSwiped(false); }}
-            className="px-3 py-2 bg-red-500 text-white rounded-xl text-sm font-medium min-h-[44px]"
-          >
-            삭제
-          </button>
-        </div>
-      )}
-
-      <div
-        className={`transition-transform select-none ${swiped ? swipeTranslate : 'translate-x-0'}`}
-        onClick={() => setSwiped(false)}
-      >
+    <>
+      <div className="rounded-2xl" data-testid={`board-card-${board.id}`} data-board-id={board.id}>
         {board.isCompleted ? (
           // 완성된 판
           <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-4 rounded-2xl text-white">
@@ -116,33 +66,13 @@ export default function StampBoardCard({
                   <Badge color="amber">⭐ 추천</Badge>
                 )}
               </div>
-              <div className="flex items-center gap-1">
-                {onMoveUp && (
-                  <button
-                    onClick={e => { e.stopPropagation(); onMoveUp(); }}
-                    className="min-w-[36px] min-h-[36px] flex items-center justify-center text-gray-400 active:text-indigo-600 text-base leading-none"
-                    aria-label="우선순위 올리기"
-                  >
-                    ↑
-                  </button>
-                )}
-                {onMoveDown && (
-                  <button
-                    onClick={e => { e.stopPropagation(); onMoveDown(); }}
-                    className="min-w-[36px] min-h-[36px] flex items-center justify-center text-gray-400 active:text-indigo-600 text-base leading-none"
-                    aria-label="우선순위 내리기"
-                  >
-                    ↓
-                  </button>
-                )}
-                <button
-                  data-testid="btn-more"
-                  onClick={e => { e.stopPropagation(); setSwiped(s => !s); }}
-                  className="min-w-[32px] min-h-[32px] flex items-center justify-center text-gray-400 active:text-gray-600 text-sm"
-                >
-                  ···
-                </button>
-              </div>
+              <button
+                data-testid="btn-more"
+                onClick={e => { e.stopPropagation(); setMenuOpen(true); }}
+                className="min-w-[32px] min-h-[32px] flex items-center justify-center text-gray-400 active:text-gray-600 text-sm"
+              >
+                ···
+              </button>
             </div>
 
             {/* 도장 그리드 */}
@@ -181,6 +111,76 @@ export default function StampBoardCard({
           </div>
         )}
       </div>
-    </div>
+
+      {/* 액션 시트 */}
+      {menuOpen && (
+        <>
+          {/* 딤 */}
+          <div
+            className="fixed inset-0 z-40 bg-black/30"
+            onClick={() => setMenuOpen(false)}
+          />
+          {/* 시트 */}
+          <div className="fixed left-0 right-0 bottom-0 z-50 bg-white rounded-t-3xl pb-8 pt-2">
+            {/* 핸들 */}
+            <div className="flex justify-center py-3">
+              <div className="w-9 h-1 rounded-full bg-gray-200" />
+            </div>
+
+            {/* 판 이름 */}
+            <p className="text-center text-sm font-semibold text-gray-700 pb-3 border-b border-gray-100">
+              {board.name}
+            </p>
+
+            <div className="px-4 pt-2 space-y-1">
+              {/* 도장 추가 버튼 */}
+              {hasStampButtons && (
+                <>
+                  <button
+                    data-testid="menu-stamp-exchange"
+                    onClick={() => { onAddStamp!(board.id, 'exchange'); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl active:bg-gray-50 text-left"
+                  >
+                    <span className="text-lg">🔄</span>
+                    <span className="text-sm font-medium text-gray-700">교환 도장 추가</span>
+                  </button>
+                  <button
+                    onClick={() => { onAddStamp!(board.id, 'share'); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl active:bg-gray-50 text-left"
+                  >
+                    <span className="text-lg">🎁</span>
+                    <span className="text-sm font-medium text-gray-700">나눔 도장 추가</span>
+                  </button>
+                  <button
+                    onClick={() => { onAddStamp!(board.id, 'etc'); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl active:bg-gray-50 text-left"
+                  >
+                    <span className="text-lg">✏️</span>
+                    <span className="text-sm font-medium text-gray-700">기타 도장 추가</span>
+                  </button>
+                  <div className="h-px bg-gray-100 my-1" />
+                </>
+              )}
+
+              {/* 수정 / 삭제 */}
+              <button
+                onClick={() => { onEdit(board.id); setMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl active:bg-gray-50 text-left"
+              >
+                <span className="text-lg">✏️</span>
+                <span className="text-sm font-medium text-gray-700">도장판 수정</span>
+              </button>
+              <button
+                onClick={() => { onDelete(board.id); setMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl active:bg-red-50 text-left"
+              >
+                <span className="text-lg">🗑️</span>
+                <span className="text-sm font-medium text-red-500">도장판 삭제</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }

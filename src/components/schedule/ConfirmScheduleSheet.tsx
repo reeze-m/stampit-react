@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Schedule, Show, BoardAllocation } from '../../types';
-import { formatKSTDate } from '../../utils/dateUtils';
+import { formatKSTDate, todayKSTString } from '../../utils/dateUtils';
 import { formatMoney } from '../../utils/priceCalc';
+import { sortBoardsByNextBenefit } from '../../utils/boardUtils';
 
 interface ConfirmScheduleSheetProps {
   isOpen: boolean;
@@ -26,9 +27,10 @@ export default function ConfirmScheduleSheet({
   const grade    = schedule ? show.seatGrades.find(g => g.id === schedule.seatGradeId) : undefined;
 
   const activeBoards = useMemo(() =>
-    show.stampBoards
-      .filter(b => b.isActive && !b.isCompleted && !b.isHidden)
-      .sort((a, b) => a.sortOrder - b.sortOrder),
+    sortBoardsByNextBenefit(
+      show.stampBoards.filter(b => b.isActive && !b.isCompleted && !b.isHidden),
+      todayKSTString()
+    ),
     [show.stampBoards]
   );
 
