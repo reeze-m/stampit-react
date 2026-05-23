@@ -12,6 +12,8 @@ import SettingsTab from '../tabs/SettingsTab';
 import StorageManageSheet from '../components/settings/StorageManageSheet';
 import { useStorageAlertStore } from '../store/storageAlertStore';
 import { isNoUseBenefit, isCouponBenefit } from '../utils/benefitUtils';
+import { useSettingsStore } from '../store/settingsStore';
+import { scheduleNotifications } from '../utils/notifications';
 
 type TabType = 'planner' | 'status' | 'settings';
 
@@ -42,9 +44,14 @@ export default function MainScreen({ shows }: MainScreenProps) {
       ).length
     : 0;
 
-  // 앱 실행 시 날짜가 도래한 예비 도장 혜택 재계산
+  // 앱 실행 시 날짜가 도래한 예비 도장 혜택 재계산 + 알림 스케줄 등록
   useEffect(() => {
     recalcBenefits();
+    const { shows: allShows, schedules: allSchedules } = useShowStore.getState();
+    const { settings } = useSettingsStore.getState();
+    if (settings.notification) {
+      scheduleNotifications(allSchedules, allShows, settings.notification);
+    }
   }, []);
 
   // 공연이 추가되거나 활성 공연이 사라질 때 자동 선택

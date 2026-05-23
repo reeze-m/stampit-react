@@ -10,6 +10,7 @@ interface StampBoardCardProps {
   isFirst: boolean;
   onEdit: (boardId: string) => void;
   onDelete: (boardId: string) => void;
+  onShare?: (boardId: string) => void;
   onAddStamp?: (boardId: string, type?: 'exchange' | 'share' | 'etc') => void;
 }
 
@@ -20,6 +21,7 @@ export default function StampBoardCard({
   isFirst,
   onEdit,
   onDelete,
+  onShare,
   onAddStamp,
 }: StampBoardCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -162,13 +164,21 @@ export default function StampBoardCard({
                 </>
               )}
 
-              {/* 수정 / 삭제 */}
+              {/* 수정 / 공유 / 삭제 */}
               <button
                 onClick={() => { onEdit(board.id); setMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl active:bg-gray-50 text-left"
               >
                 <span className="text-lg">✏️</span>
                 <span className="text-sm font-medium text-gray-700">도장판 수정</span>
+              </button>
+              <button
+                data-testid="menu-share-board"
+                onClick={() => { onShare?.(board.id); setMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl active:bg-gray-50 text-left"
+              >
+                <span className="text-lg">🔗</span>
+                <span className="text-sm font-medium text-gray-700">공유하기</span>
               </button>
               <button
                 onClick={() => { onDelete(board.id); setMenuOpen(false); }}

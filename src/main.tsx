@@ -5,6 +5,10 @@ import App from './App.tsx'
 import ErrorBoundary from './components/common/ErrorBoundary.tsx'
 import ErrorFallback from './components/common/ErrorFallback.tsx'
 
+import { registerServiceWorker } from './utils/notifications';
+
+registerServiceWorker();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary fallback={<ErrorFallback />}>

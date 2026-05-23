@@ -22,6 +22,7 @@ import { isCouponBenefit } from '../utils/benefitUtils';
 import { todayKSTString } from '../utils/dateUtils';
 import { sortBoardsByNextBenefit } from '../utils/boardUtils';
 import PendingAlertBanner from '../components/planner/PendingAlertBanner';
+import BoardShareSheet from '../components/status/BoardShareSheet';
 
 interface StatusTabProps {
   show: Show;
@@ -51,6 +52,7 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
   const [addStampInitialType, setAddStampInitialType] = useState<'exchange' | 'share' | 'etc' | undefined>(undefined);
   const [couponHistoryOpen, setCouponHistoryOpen] = useState(false);
   const [showAmount, setShowAmount] = useState(false); // 기본: 블러(숨김)
+  const [sharingBoardId, setSharingBoardId] = useState<string | null>(null);
 
   const boardSectionRef = useRef<HTMLElement>(null);
   const benefitSectionRef = useRef<HTMLElement>(null);
@@ -240,6 +242,7 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
                       isFirst={board.id === firstActiveId}
                       onEdit={(boardId) => setEditingBoardId(boardId)}
                       onDelete={handleDeleteBoard}
+                      onShare={(boardId) => setSharingBoardId(boardId)}
                       onAddStamp={(boardId, type) => { setAddStampBoardId(boardId); setAddStampInitialType(type); }}
                     />
                   ))}
@@ -417,6 +420,21 @@ export default function StatusTab({ show, onGoToPlanner }: StatusTabProps) {
             initialType={addStampInitialType}
             onSave={(data) => addManualStamp(show.id, addStampBoardId, data)}
             onClose={() => { setAddStampBoardId(null); setAddStampInitialType(undefined); }}
+          />
+        );
+      })()}
+
+      {sharingBoardId && (() => {
+        const board = show.stampBoards.find(b => b.id === sharingBoardId);
+        if (!board) return null;
+        return (
+          <BoardShareSheet
+            isOpen={true}
+            onClose={() => setSharingBoardId(null)}
+            board={board}
+            showName={show.name}
+            showColor={show.color}
+            today={today}
           />
         );
       })()}

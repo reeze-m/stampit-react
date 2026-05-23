@@ -130,15 +130,20 @@ export async function clearStorage(page: Page) {
   await page.evaluate((key) => localStorage.removeItem(key), STORAGE_KEY);
 }
 
-export async function seedShow(page: Page) {
+interface SeedShowOpts {
+  showName?: string;
+}
+
+export async function seedShow(page: Page, opts: SeedShowOpts = {}) {
+  const show = opts.showName ? { ...BASE_SHOW, name: opts.showName } : BASE_SHOW;
   await installBridge(page);
   await page.goto('/');
   await page.evaluate(
-    ({ key, show, settingsKey }) => {
-      localStorage.setItem(key, JSON.stringify({ shows: [show], schedules: [] }));
+    ({ key, show: s, settingsKey }) => {
+      localStorage.setItem(key, JSON.stringify({ shows: [s], schedules: [] }));
       localStorage.setItem(settingsKey, JSON.stringify({ showRealCost: true, onboardingDone: true }));
     },
-    { key: STORAGE_KEY, show: BASE_SHOW, settingsKey: 'stampit_settings' }
+    { key: STORAGE_KEY, show, settingsKey: 'stampit_settings' }
   );
 }
 

@@ -3,6 +3,7 @@ import { colors } from '../constants/tokens';
 import type { Show } from '../types';
 import { useShowStore } from '../store/showStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { requestNotificationPermission } from '../utils/notifications';
 
 import SeatGradeSheet from '../components/show/SeatGradeSheet';
 import DiscountTypeSheet from '../components/show/DiscountTypeSheet';
@@ -44,7 +45,13 @@ export default function SettingsTab({ show, onOpenTabOrder }: SettingsTabProps) 
   } = useShowStore();
 
   const showSchedules = schedules.filter(s => s.showId === show.id);
-  const { settings, setShowRealCost } = useSettingsStore();
+  const { settings, setShowRealCost, updateNotification } = useSettingsStore();
+
+  // notification 기본값 (optional 필드 대응)
+  const notification = settings.notification ?? {
+    sameDay:   { enabled: false, hour: 9 },
+    dayBefore: { enabled: false, hour: 21 },
+  };
 
   const [gradeSheetOpen, setGradeSheetOpen] = useState(false);
   const [deleteHiddenBoardId, setDeleteHiddenBoardId] = useState<string | null>(null);
@@ -60,6 +67,7 @@ export default function SettingsTab({ show, onOpenTabOrder }: SettingsTabProps) 
   const [eventForm, setEventForm] = useState(DEFAULT_EVENT);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [importToast, setImportToast] = useState<{ ok: boolean } | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeDiscountTypes = show.discountTypes.filter(d => !d.isDeleted);
@@ -342,6 +350,124 @@ export default function SettingsTab({ show, onOpenTabOrder }: SettingsTabProps) 
             </button>
           </div>
         </div>
+
+        {/* ── 알림 ──────────────────────────────────── */}
+        <div data-testid="settings-section-notification">
+        <SectionHeader title="알림" />
+        <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-100 mx-4">
+
+          {/* 당일 알림 */}
+          <div className="px-4 py-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-800">공연 당일 알림</p>
+                <p className="text-xs text-gray-400 mt-0.5">관람 당일 아침에 알려드려요</p>
+              </div>
+              <button
+                data-testid="toggle-sameday"
+                role="switch"
+                aria-checked={notification.sameDay.enabled ? 'true' : 'false'}
+                onClick={async () => {
+                  if (!notification.sameDay.enabled) {
+                    const ok = await requestNotificationPermission();
+                    if (!ok) {
+                      setPermissionDenied(true);
+                      return;
+                    }
+                  }
+                  setPermissionDenied(false);
+                  updateNotification('sameDay', 'enabled', !notification.sameDay.enabled);
+                }}
+                className={`w-12 h-6 rounded-full transition-colors ${
+                  notification.sameDay.enabled ? 'bg-indigo-600' : 'bg-gray-200'
+                }`}
+              >
+                <div className={`w-5 h-5 bg-white rounded-full shadow m-0.5 transition-transform ${
+                  notification.sameDay.enabled ? 'translate-x-6' : 'translate-x-0'
+                }`} />
+              </button>
+            </div>
+
+            {notification.sameDay.enabled && (
+              <div className="mt-3 flex items-center gap-2">
+                <p className="text-xs text-gray-500">알림 시간</p>
+                <select
+                  value={notification.sameDay.hour}
+                  onChange={e => updateNotification('sameDay', 'hour', Number(e.target.value))}
+                  className="text-sm border border-gray-200 rounded-lg px-2 py-1 text-gray-700"
+                >
+                  {Array.from({ length: 18 }, (_, i) => i + 6).map(h => (
+                    <option key={h} value={h}>
+                      {h < 12 ? `오전 ${h}시` : h === 12 ? '오후 12시' : `오후 ${h - 12}시`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* 전날 알림 */}
+          <div className="px-4 py-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-800">공연 전날 알림</p>
+                <p className="text-xs text-gray-400 mt-0.5">관람 전날 미리 알려드려요</p>
+              </div>
+              <button
+                data-testid="toggle-daybefore"
+                role="switch"
+                aria-checked={notification.dayBefore.enabled ? 'true' : 'false'}
+                onClick={async () => {
+                  if (!notification.dayBefore.enabled) {
+                    const ok = await requestNotificationPermission();
+                    if (!ok) { setPermissionDenied(true); return; }
+                  }
+                  setPermissionDenied(false);
+                  updateNotification('dayBefore', 'enabled', !notification.dayBefore.enabled);
+                }}
+                className={`w-12 h-6 rounded-full transition-colors ${
+                  notification.dayBefore.enabled ? 'bg-indigo-600' : 'bg-gray-200'
+                }`}
+              >
+                <div className={`w-5 h-5 bg-white rounded-full shadow m-0.5 transition-transform ${
+                  notification.dayBefore.enabled ? 'translate-x-6' : 'translate-x-0'
+                }`} />
+              </button>
+            </div>
+
+            {notification.dayBefore.enabled && (
+              <div className="mt-3 flex items-center gap-2">
+                <p className="text-xs text-gray-500">알림 시간</p>
+                <select
+                  value={notification.dayBefore.hour}
+                  onChange={e => updateNotification('dayBefore', 'hour', Number(e.target.value))}
+                  className="text-sm border border-gray-200 rounded-lg px-2 py-1 text-gray-700"
+                >
+                  {Array.from({ length: 18 }, (_, i) => i + 6).map(h => (
+                    <option key={h} value={h}>
+                      {h < 12 ? `오전 ${h}시` : h === 12 ? '오후 12시' : `오후 ${h - 12}시`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 권한 거절 안내 */}
+        {permissionDenied && (
+          <p className="text-xs text-red-500 mx-4 mt-2">
+            알림 권한이 거절됐어요. 브라우저 설정에서 스탬핏 알림을 허용해주세요.
+          </p>
+        )}
+
+        {/* 알림 제한 안내 */}
+        {(notification.sameDay.enabled || notification.dayBefore.enabled) && (
+          <p className="text-xs text-gray-400 mx-4 mt-2 leading-relaxed">
+            ℹ️ 알림을 받으려면 홈 화면에 추가 후 하루에 한 번 이상 앱을 실행해 주세요.
+          </p>
+        )}
+        </div>{/* /settings-section-notification */}
 
         {/* ── 순서 ──────────────────────────────────── */}
         {onOpenTabOrder && (

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { loadFromStorage, saveToStorage } from './storage';
 import type { AppSettings } from '../types';
+import { useShowStore } from './showStore';
+import { scheduleNotifications } from '../utils/notifications';
 
 interface SettingsStore {
   settings: AppSettings;
@@ -9,6 +11,7 @@ interface SettingsStore {
   setQuickStartDone: () => void;
   setSeenConfirmTip: () => void;
   setLastUsed: (showId: string, seatGradeId: string, discountTypeId: string) => void;
+  updateNotification: (type: 'sameDay' | 'dayBefore', field: 'enabled' | 'hour', value: boolean | number) => void;
 }
 
 const SETTINGS_KEY = 'stampit_settings';
@@ -50,4 +53,25 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       saveToStorage(SETTINGS_KEY, next);
       return { settings: next };
     }),
+  updateNotification: (type, field, value) => {
+    set(state => {
+      const defaults = { sameDay: { enabled: false, hour: 9 }, dayBefore: { enabled: false, hour: 21 } };
+      const current = state.settings.notification ?? defaults;
+      const updated = {
+        ...state.settings,
+        notification: {
+          ...current,
+          [type]: { ...current[type], [field]: value },
+        },
+      };
+      saveToStorage(SETTINGS_KEY, updated);
+      return { settings: updated };
+    });
+    // 설정 변경 시 알림 스케줄 즉시 갱신
+    const { shows, schedules } = useShowStore.getState();
+    const { settings } = useSettingsStore.getState();
+    if (settings.notification) {
+      scheduleNotifications(schedules, shows, settings.notification);
+    }
+  },
 }));

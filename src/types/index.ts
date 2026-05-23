@@ -165,6 +165,11 @@ export interface StampEvent {
   targetScheduleId?: string;
 }
 
+export interface NotificationSlot {
+  enabled: boolean;
+  hour: number; // 6~23
+}
+
 export interface AppSettings {
   showRealCost: boolean;
   onboardingDone: boolean;
@@ -173,6 +178,10 @@ export interface AppSettings {
   lastUsedShowId?: string;
   lastUsedSeatGradeId?: string;
   lastUsedDiscountTypeId?: string;
+  notification?: {
+    sameDay: NotificationSlot;
+    dayBefore: NotificationSlot;
+  };
 }
 
 export interface UndoAction {

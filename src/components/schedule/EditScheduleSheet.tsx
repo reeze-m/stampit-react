@@ -121,6 +121,7 @@ export default function EditScheduleSheet({
         title="일정 수정"
         footer={
           <Button
+            data-testid="btn-save-schedule"
             onClick={handleSubmit}
             disabled={!date || !gradeId || !discountId}
             fullWidth

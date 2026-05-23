@@ -27,6 +27,7 @@ import { todayKSTString } from '../utils/dateUtils';
 import { colors } from '../constants/tokens';
 import { sortBoardsByNextBenefit } from '../utils/boardUtils';
 import CalcIcon from '../components/common/icons/CalcIcon';
+import { scheduleNotifications } from '../utils/notifications';
 
 
 interface PlannerTabProps {
@@ -133,6 +134,17 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
     return null;
   }
 
+  function refreshNotifications() {
+    const { shows: allShows, schedules: allSchedules } = useShowStore.getState();
+    // localStorage에서 직접 읽어 최신 설정 반영 (테스트 환경 seedNotificationSettings 대응)
+    const rawSettings = localStorage.getItem('stampit_settings');
+    const lsSettings = rawSettings ? (JSON.parse(rawSettings) as { notification?: Parameters<typeof scheduleNotifications>[2] }) : {};
+    const notification = lsSettings.notification ?? useSettingsStore.getState().settings.notification;
+    if (notification) {
+      scheduleNotifications(allSchedules, allShows, notification);
+    }
+  }
+
   function handleConfirm(id: string, allocations: BoardAllocation[], multiplierOverride?: number, cast?: string) {
     if (multiplierOverride !== undefined) {
       updateSchedule(id, { multiplier: multiplierOverride });
@@ -187,6 +199,7 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
       message: '일정이 삭제됐어요',
     });
     deleteSchedule(scheduleId);
+    refreshNotifications();
   }
 
   // SC-33: Undo 실행 — 원본 일정 전체를 그대로 복원 (ID·배분 정보 유지)
@@ -213,12 +226,14 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
   // SC-30: 일정 취소 (불참)
   function handleCancelSchedule(scheduleId: string, reason?: string, refundAmount?: number) {
     cancelSchedule(scheduleId, reason, refundAmount);
+    refreshNotifications();
   }
 
   // M-03: 취소 일정 복구
   function handleRestoreSchedule(scheduleId: string) {
     restoreSchedule(scheduleId);
     setRestoreToast('일정이 복구됐어요. 확정하면 도장이 적립돼요.');
+    refreshNotifications();
   }
 
   return (
@@ -551,6 +566,7 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
             setLastUsed(show.id, data.seatGradeId, data.discountTypeId);
           }
           setCalendarAddDate(undefined);
+          refreshNotifications();
         }}
         onAddAndConfirm={data => {
           const id = addSchedule(data);
@@ -560,6 +576,7 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
           setCalendarAddDate(undefined);
           setAddOpen(false);
           setConfirmingId(id);
+          refreshNotifications();
         }}
       />
 
@@ -575,6 +592,7 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
         onSave={(scheduleId, data) => {
           updateSchedule(scheduleId, data);
           setEditingScheduleId(null);
+          refreshNotifications();
         }}
       />
 
@@ -711,6 +729,7 @@ export default function PlannerTab({ show, onGoToSettings, onGoToStatus }: Plann
             specialEventIds: [],
           });
           setLastUsed(show.id, seatGradeId, discountTypeId);
+          refreshNotifications();
         }}
         onFullAdd={() => setAddOpen(true)}
       />
