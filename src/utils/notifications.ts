@@ -194,7 +194,7 @@ export async function scheduleNotifications(
     if (isPeriodicSyncSupported()) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (reg as any).periodicSync.register('stampit-check-notifications', {
+        await (reg as any).periodicSync.register(SYNC_TAG, {
           minInterval: 60 * 60 * 1000, // 1시간
         });
       } catch {
